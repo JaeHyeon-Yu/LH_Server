@@ -4,44 +4,55 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <WinSock2.h>
 #include <iostream>
+#include <vector>
+#include <mutex>
 #include "globals.h"
 #include "CDBConnector.h"
+#include "CLobby.h"
+#include "CPlayer.h"
+
 class CServer {
 private:
 	int m_retval;
 	WSADATA m_wsa;
-	HANDLE m_hcp;
 	HANDLE m_hthread;
+	HANDLE m_lobbythread;
 
 	SOCKET m_listensocket;
 	SOCKADDR_IN m_serveraddr;
 
 	SOCKET m_clientsock;
 	SOCKADDR_IN m_clientaddr;
-	DWORD m_recvBytes, m_flags;
 	char buf[BUFSIZE];
+	std::mutex m_mu;
 
 	CDBConnector m_dbc;
-
+	CLobby m_lobby[MAX_LOBBY];
+	int m_numofRooms;
 public:
-	CServer();
-	~CServer();
+	CServer() = default;
+	~CServer() = default;
 
 	void Start();
-	// void WorkerThread();
-	static DWORD WINAPI WorkerThread(LPVOID arg);
 
-	void Login(const SOCKET& sock);
-	int Login(const SOCKET& sock, char* buf);
-
-	int ProcessPacket(char* buf);
-
-	int recvn(SOCKET s, char* buf, int len, int flags);
+	void Login(const SOCKET& sock, CPlayer& player);
+	int Login(const SOCKET& sock, CPlayer& player, char* buf);
 
 	void err_quit(const char* msg);
 	void err_display(const char* msg);
 
+	// Thread Function
+	static DWORD WINAPI WorkerThread(LPVOID arg);
+	static DWORD WINAPI UpdateLobby(LPVOID arg);
+	static DWORD WINAPI RecvThread(LPVOID arg);
 
+	// Supervise Account with MS-SQL
 	int SignUp(const SOCKET& sock, char* buf);
+
+	// Supervise Lobby
+	int CreateRoom(const CPlayer& master);
+
+	// for Test
+	SOCKET GetSock() { return m_clientsock; }
 };
 

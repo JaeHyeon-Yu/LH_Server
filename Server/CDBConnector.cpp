@@ -1,4 +1,5 @@
 #include "CDBConnector.h"
+#include <iostream>
 using namespace std;
 
 void CDBConnector::AllocateHandle() {
@@ -100,21 +101,25 @@ void CDBConnector::ExcuteStatement() {
 	}
 }
 
-void CDBConnector::RetrieveResult() {
-	string AccountId, AccouuntPassword;
+bool CDBConnector::RetrieveResult(std::string Cid, std::string Cpass) {
+	char AccountId[10], AccouuntPass[10];
 	SQLLEN id, pass;
 
 	SQLBindCol(hstmt, 1, SQL_C_CHAR, &AccountId, sizeof(AccountId), &id);
-	SQLBindCol(hstmt, 2, SQL_C_CHAR, &AccouuntPassword, sizeof(AccouuntPassword), &pass);
-
-	// printf("id\tname\t\tcal\t\tstart");
-
-	do {
-		retcode = SQLFetch(hstmt);
-		printf("%s %s \n", AccountId, AccouuntPassword);
-	} while (retcode != SQL_NO_DATA);
+	SQLBindCol(hstmt, 2, SQL_C_CHAR, &AccouuntPass, sizeof(AccouuntPass), &pass);
+	
+	retcode = SQLFetch(hstmt);
 
 	SQLFreeStmt(hstmt, SQL_UNBIND);
+	
+	// Delete garbage value - Do Bind ID and pass, value is stored garbage value
+	for (int i = Cid.length(); i < 10; ++i)
+		AccountId[i] = NULL;
+	for (int i = Cpass.length(); i < 10; ++i)
+		AccouuntPass[i] = NULL;
+
+	if (string(AccountId) == Cid && string(AccouuntPass) == Cpass) return true;
+	return false;
 }
 
 void CDBConnector::DisconnectDataSource() {

@@ -34,8 +34,7 @@ public:
 	int ExcuteStatementDirect(SQLCHAR* sql); // Excute SQL with direct
 	void PrepareStatement(SQLCHAR* sql); // Excute SQL with prepare
 	void ExcuteStatement(); // Excute prepared SQL
-	void RetrieveResult(); // Read SQL result
+	bool RetrieveResult(std::string id, std::string pass); // Read SQL result
 	void DisconnectDataSource(); // free Handle
-	// bool Connect();
 };
 
