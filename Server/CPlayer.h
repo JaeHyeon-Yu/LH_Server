@@ -1,11 +1,15 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include "CObject.h"
+#include "packet.h"
 #define MAX_CLIENTS 100
+#define MAX_MOVE_RANGE 10
+#define MAX_VIEW_RANGE 5
 
 enum Player_State {
 	not_login = -1, In_Lobby, In_Room, In_Game,
-	host, none_ready
+	host, none_ready, play_game
 };
 
 class CPlayer {
@@ -22,7 +26,7 @@ private:
 public:
 	CPlayer() = default;
 	CPlayer(std::string id, std::string pass);
-	~CPlayer() = default;
+	~CPlayer();
 
 	void Initialize(const CPlayer& p);
 
@@ -37,19 +41,13 @@ public:
 	bool GetHost() { return m_host; }
 	void SetIdx(int n) { m_idx = n; }
 	int GetIdx() { return m_idx; }
+
 	// ??
 	void Ready();
 
-	// TestCode
-	void ShowPlayerInfo() const {
-		std::cout <<"player - "<< m_id << "\t" << m_pass << std::endl;
-	}
-	void OutLobby() {
-		m_state = not_login;
-		m_ready = false;
-		m_host = false;
-		m_id.clear();
-		m_pass.clear();
-	}
+	void Update(const CS_PLAYER& pack);
+
+	void Attck();
+
 };
 

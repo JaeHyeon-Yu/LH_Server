@@ -4,12 +4,14 @@ CPlayer::CPlayer(std::string id, std::string pass) {
 	m_id = id; 
 	m_pass = pass;
 }
-
+CPlayer::~CPlayer() {
+	m_id.clear();
+	m_pass.clear();
+}
 void CPlayer::Initialize(const CPlayer& p) {
 	m_id = p.m_id;
 	m_pass = p.m_pass;
 	m_level = p.m_level;
-	printf("Init Player ID : %s", m_id.c_str());
 }
 bool CPlayer::operator== (const CPlayer& cp) const {
 	return m_id == cp.m_id;
@@ -32,4 +34,7 @@ void CPlayer::Ready() {
 	printf("%s is ready!\n", m_id.c_str());
 	if (m_ready) m_ready = false;
 	else m_ready = true;
+}
+void CPlayer::Attck() {
+	
 }
