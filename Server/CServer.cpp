@@ -6,7 +6,7 @@
 HANDLE g_sendEvents[MAX_PLAYER];
 short board[SIDE_LEN][SIDE_LEN];
 DWORD WINAPI CServer::WorkerThread(LPVOID arg) {
-	CServer* server = (CServer*)arg;
+	CServer* server = reinterpret_cast<CServer*>(arg);
 	SOCKET sock = server->GetSock();
 	int retval;
 	char buf[BUFSIZE];

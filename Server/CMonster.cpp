@@ -20,28 +20,29 @@ void CMonster::Update(CObject& my, const CObject& other) {
 			return;
 		}
 		
-		// m_chasePath = m_pathFinder->GetPath(myPos, otherPos);
-		// for (int i = 0; i < m_chasePath.size(); ++i) {
-		// 	// myPos = m_chasePath.pop_front();
-		// 	// m_chasePath.
-		// 	myPos = m_chasePath.front();
-		// 	m_chasePath.pop_front();
-		// 	Sleep(1000 / 400);
-		// 	// printf("%d  %d  %d \n", myPos.x, myPos.y, myPos.z);
-		// }
-		// m_chasePath.clear();
+		m_chasePath = m_pathFinder->GetPath(myPos, otherPos);
+		for (int i = 0; i < m_chasePath.size(); ++i) {
+			// myPos = m_chasePath.pop_front();
+			// m_chasePath.
+			myPos = m_chasePath.front();
+			myPos.z = board[(int)myPos.x+X_SIDE][(int)myPos.y+Y_SIDE];
+			m_chasePath.pop_front();
+			Sleep(1000 / 400);
+			// printf("%d  %d  %d \n", myPos.x, myPos.y, myPos.z);
+		}
+		m_chasePath.clear();
 
-		float x_dis = myPos.x - otherPos.x;
-		float y_dis = myPos.y - otherPos.y;
-		x_dis=myPos.x + (-x_dis / sqrt((x_dis*x_dis) + (y_dis*y_dis)))*3.f;
-		y_dis=myPos.y + (-y_dis / sqrt((x_dis*x_dis) + (y_dis*y_dis)))*3.f;
-		
-		float desZ = board[(int)x_dis + X_SIDE][(int)y_dis + Y_SIDE];
-		if (desZ > (myPos.z + 20.f))
-			return;
-		myPos.x = x_dis;
-		myPos.y = y_dis;
-		myPos.z = desZ;
+		// float x_dis = myPos.x - otherPos.x;
+		// float y_dis = myPos.y - otherPos.y;
+		// x_dis=myPos.x + (-x_dis / sqrt((x_dis*x_dis) + (y_dis*y_dis)))*3.f;
+		// y_dis=myPos.y + (-y_dis / sqrt((x_dis*x_dis) + (y_dis*y_dis)))*3.f;
+		// 
+		// float desZ = board[(int)x_dis + X_SIDE][(int)y_dis + Y_SIDE];
+		// if (desZ > (myPos.z + 20.f))
+		// 	return;
+		// myPos.x = x_dis;
+		// myPos.y = y_dis;
+		// myPos.z = desZ;
 	}
 	else if (m_state == return_home) {
 		if (distance < ATTACK_RANGE) {

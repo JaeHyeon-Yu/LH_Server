@@ -7,13 +7,14 @@ using namespace std;
 
 bool Overlap_Start_End(Position s, Position e);
 float GetDistance(Position p, Position e);
+extern short board[SIDE_LEN][SIDE_LEN];
 
 class Node {
 private:
 	Position currentPos;
 	int costG;	// 소모비용 -> 움직인 횟수
 	float costH;	// 예상비용 -> 도착점까지의 거리
-	int costF;	
+	float costF;	
 	Node* parent;
 public:
 	Node() = default;
@@ -22,7 +23,7 @@ public:
 
 	int GetCostG() const;
 	float GetCostH() const;
-	int GetCostF() const;
+	float GetCostF() const;
 	Node * GetParent() const;
 	Position GetPosition() const;
 

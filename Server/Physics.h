@@ -1,4 +1,6 @@
 #pragma once
+#include <stdio.h>
+#include <math.h>
 struct Position {
 	float x, y, z;
 	Position operator+(const Position& p) {
