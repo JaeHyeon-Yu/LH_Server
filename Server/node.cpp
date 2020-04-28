@@ -6,18 +6,31 @@ bool Overlap_Start_End(Position s, Position e) {
 }
 
 float GetDistance(Position p, Position e) {
-	float x = pow((p.x - e.x), 2);
-	float y = pow((p.y - e.y), 2);
-	float z = pow((p.z - e.z), 2);
-	float distance = sqrt(x + y + z);
+	int x = pow((p.x - e.x), 2);
+	int y = pow((p.y - e.y), 2);
+	// int z = pow((p.z - e.z), 2);
+	float distance = sqrt(x + y);
 	return abs(distance);
 }
-
+bool IsBlock(Position p) {
+	if (board[(int)p.x+1][(int)p.y] - 20 > p.z) return true;
+	if (board[(int)p.x-1][(int)p.y] - 20 > p.z) return true;
+	if (board[(int)p.x][(int)p.y+1] - 20 > p.z) return true;
+	if (board[(int)p.x][(int)p.y-1] - 20 > p.z) return true;
+	return false;
+}
 Node::Node(Position pos, Node* parent, int g, Position h) {
 	currentPos = pos;
-	// currentPos.z = board[X_SIDE][Y_SIDE];
 	this->parent = parent;
-	costG = g;
+	endPos = h;
+
+	// 임시로 g 자리에 방향을 받아서 처리해보자
+	if (parent == nullptr) costG = 0;
+	else if (g == X_UP || g == X_DOWN || g == Y_UP || g == Y_DOWN)
+		costG = this->parent->GetCostG() + 10;
+	else
+		costG = this->parent->GetCostG() + 14;
+
 	SetCostH(h);
 }
 
@@ -41,13 +54,62 @@ Position Node::GetPosition() const {
 	return currentPos;
 }
 
+void Node::SetParent(Node* n) {
+	parent = n;
+}
+
+
 void Node::SetCostG(const int& g) {
 	costG = g;
 }
 
+void Node::SetCostH(Position p, const int block) {
+	/*int xIdx = (int)currentPos.x + X_SIDE;
+	int yIdx = (int)currentPos.y + Y_SIDE;
+
+	for (int i = 1; i < 1000; ++i)
+		if (block == 1) {
+			if (board[xIdx - i][yIdx + 5] - 20 < currentPos.z ||
+				board[xIdx + i][yIdx + 5] - 20 < currentPos.z) {
+				costH = i + static_cast<int>(abs(endPos.y - currentPos.y));
+				break;
+			}
+		}
+		else if (block == 2) {
+			if (board[xIdx - i][yIdx - 5] - 20 < currentPos.z ||
+				board[xIdx + i][yIdx - 5] - 20 < currentPos.z) {
+				costH = i + static_cast<int>(abs(endPos.y - currentPos.y));
+				break;
+			}
+		}
+		else if (block == 3) {
+			if (board[xIdx + 5][yIdx - i] - 20 < currentPos.z ||
+				board[xIdx + 5][yIdx + i] - 20 < currentPos.z) {
+				costH = i + static_cast<int>(abs(endPos.x - currentPos.x));
+				break;
+			}
+		}
+		else if (block == 4) {
+			if (board[xIdx - 5][yIdx - i] - 20 < currentPos.z ||
+				board[xIdx - 5][yIdx + i] - 20 < currentPos.z) {
+				costH = i + static_cast<int>(abs(endPos.x - currentPos.x));
+				break;
+			}
+		}*/
+	costH = (abs(p.x - currentPos.x) + abs(p.y - currentPos.y));
+
+}
+
 void Node::SetCostH(Position p) {
-	costH = GetDistance(currentPos, p);
+	// costH = GetDistance(currentPos, p);
+	int x = static_cast<int>(abs(p.x - currentPos.x));
+	int y = static_cast<int>(abs(p.y - currentPos.y));
+	costH = (abs(p.x - currentPos.x) + abs(p.y - currentPos.y)) * 10;
 	
+	
+
+
+	//
 	/*
 	여기서 높이를 고려해야 한다라...
 	중간값들을 고려해야하는데

@@ -19,16 +19,20 @@ void CMonster::Update(CObject& my, const CObject& other) {
 			m_state = return_home;
 			return;
 		}
-		
+		// cout << "설마 돌아가고 있는거니?\n";
 		m_chasePath = m_pathFinder->GetPath(myPos, otherPos);
+		// cout << "에이 설마\n";
+
 		for (int i = 0; i < m_chasePath.size(); ++i) {
 			// myPos = m_chasePath.pop_front();
 			// m_chasePath.
 			myPos = m_chasePath.front();
+			// cout << myPos.x << "\t" << myPos.y << endl;
 			myPos.z = board[(int)myPos.x+X_SIDE][(int)myPos.y+Y_SIDE];
 			m_chasePath.pop_front();
 			Sleep(1000 / 400);
-			// printf("%d  %d  %d \n", myPos.x, myPos.y, myPos.z);
+			// if (board[(int)myPos.x + X_SIDE][(int)myPos.y + 100] > 240)
+				// printf("%f  %f  %f \n", myPos.x, myPos.y, myPos.z);
 		}
 		m_chasePath.clear();
 
