@@ -1,6 +1,16 @@
 #include "CDBConnector.h"
 #include <iostream>
+#include <queue>
+#include <mutex>
+
 using namespace std;
+
+enum ENUMOP { OP_RECV, OP_SEND, OP_ACCEPT, EV_MONSTER, EV_BOSS, EV_LOGIN, EV_SIGN, EV_UPDATE };
+
+queue<DB_EVENT> quaryQueue;
+mutex quaryLock;
+
+extern HANDLE g_iocp;
 
 void CDBConnector::AllocateHandle() {
 	// Allocate ODBC Handle
@@ -139,4 +149,57 @@ void CDBConnector::DisconnectDataSource() {
 		SQLFreeHandle(SQL_HANDLE_ENV, henv);
 		henv = NULL;
 	}
+}
+
+void DB_Thread() {
+	CDBConnector* dbc = new CDBConnector;
+	dbc->AllocateHandle();
+	dbc->ConnectDataSource();
+	int retcode;
+
+	while (true) {
+		this_thread::sleep_for(1ms);
+		while (true) {
+			quaryLock.lock();
+			if (quaryQueue.empty()) {
+				quaryLock.unlock();
+				break;
+			}
+
+			DB_EVENT ev = quaryQueue.front();
+			quaryQueue.pop();
+			quaryLock.unlock();
+
+			switch (ev.ev_id) {
+			case EV_LOGIN: {
+				string sql = "EXEC Login_User " + (string)ev.name + ", " + (string)ev.pass;
+				dbc->ExcuteStatementDirect((SQLCHAR*)sql.c_str());
+				dbc->RetrieveResult(ev.name, ev.pass);
+				// EXOVER *exover = new EXOVER;
+				// PostQueuedCompletionStatus(g_iocp, 1, ev.user_id, &exover->over);
+			}break;
+			case EV_SIGN: {
+				string sql = "EXEC Sign_User " + (string)ev.name + ", " + (string)ev.pass;
+				dbc->ExcuteStatementDirect((SQLCHAR*)sql.c_str());
+				dbc->RetrieveResult(ev.name, ev.pass);
+			}break;
+			case EV_UPDATE: {
+				string sql;
+			}break;
+			}
+		}
+
+	}
+	dbc->DisconnectDataSource();
+	delete dbc;
+	dbc = NULL;
+}
+
+void AddQuary(int uid, int eid, const char name[], const char pass[]) {
+	DB_EVENT ev{ uid, eid};
+	strcpy_s(ev.name, name);
+	strcpy_s(ev.pass, pass);
+	quaryLock.lock();
+	quaryQueue.push(ev);
+	quaryLock.unlock();
 }

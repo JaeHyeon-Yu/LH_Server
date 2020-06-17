@@ -3,17 +3,17 @@
 #include "CPlayer.h"
 #include "CPathFinder.h"
 #define MAX_MONSTER 1
-#define ACTIVITY_RANGE 4000
-#define ATTACK_RANGE 100
-#define CHASE_RANGE 1000
+#define ACTIVITY_RANGE 4000'00
+#define ATTACK_RANGE 200
+#define CHASE_RANGE 1000'00
 #define MONSTER_MAX_HP 100
-#define BOSS_IDX 1000
-#define START_POINT_MONSTER 100
+#define BOSS_IDX 200'000
+#define START_POINT_MONSTER 10'000
 #define IDLE_RANGE 5
 #define NO_DETECTED -1
 enum monster_state {
 	idle, attack, move, chase, return_home,
-	normal, boss
+	normal
 };
 
 class State;
@@ -27,7 +27,7 @@ private:
 	Position m_defaultPos;
 	Position pos;
 	float z_range{ 30.f };
-	list<Position> m_chasePath;
+	list<POS_2D> m_chasePath;
 	CPathFinder *m_pathFinder;
 
 	int m_activityRange;
@@ -38,6 +38,7 @@ private:
 	int target{ NO_DETECTED };
 	int prevHealth;
 	int recoveryCoolTime = 0;
+	
 public:
 	CMonster() = default;
 	~CMonster() = default;

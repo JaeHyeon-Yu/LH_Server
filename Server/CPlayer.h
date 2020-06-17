@@ -1,8 +1,11 @@
 #pragma once
 #include <string>
 #include <iostream>
+#include <unordered_set>
+#include <mutex>
 #include "CObject.h"
 #include "packet.h"
+#define MAX_PLAYER 10
 #define MAX_CLIENTS 100
 #define MAX_MOVE_RANGE 10
 #define MAX_VIEW_RANGE 1000
@@ -25,6 +28,8 @@ private:
 	bool m_host{ false };
 
 	Position pos;
+	unordered_set<int> viewList;
+	mutex pLock;
 public:
 	CPlayer() = default;
 	CPlayer(std::string id, std::string pass);
@@ -34,6 +39,8 @@ public:
 
 	// overloading
 	bool operator== (const CPlayer& cp) const;
+	
+	void MoveTo(const Position& p);
 
 	// Getter & Setter
 	void SetState(const int& state);
@@ -46,6 +53,12 @@ public:
 	void SetPosition(const Position& pos);
 	Position GetPosition() const;
 	int GetDistance(Position pos);
+
+	// Packet
+	SC_OBJECT_ENTER MakeEnterPacket();
+	SC_UPDATE_OBJ MakeUpdatePacket();
+	SC_OBJECT_LEAVE MakeLeavePacket();
+
 	// ??
 	void Ready();
 

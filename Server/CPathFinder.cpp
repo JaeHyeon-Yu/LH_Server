@@ -1,9 +1,9 @@
 #include "CPathFinder.h"
-#include "CTerrain.h"
 
 extern CTerrain *g_tmap;
 
-list<Position> CPathFinder::GetPath(Position start, Position end) {
+// list<Position> CPathFinder::GetPath(Position start, Position end) {
+list<POS_2D> CPathFinder::GetPath(POS_2D start, POS_2D end) {
 	// Initialize List
 	auto oIter = openList.begin();
 	while (openList.empty() == false) {
@@ -23,10 +23,10 @@ list<Position> CPathFinder::GetPath(Position start, Position end) {
 	할당된 메모리를 각각 명시적으로 삭제해줌
 	*/
 
-	direction[X_UP]   = { 1,0,0 };
-	direction[X_DOWN] = { -1,0,0};
-	direction[Y_UP]   = { 0,1,0 };
-	direction[Y_DOWN] = { 0,-1,0 };
+	direction[X_UP] = { 1,0 };
+	direction[X_DOWN] = { -1,0};
+	direction[Y_UP]   = { 0,1 };
+	direction[Y_DOWN] = { 0,-1 };
 	// direction[4] = { 1,1,0 };
 	// direction[5] = { 1,-1,0 };
 	// direction[6] = { -1,1,0 };
@@ -51,20 +51,20 @@ list<Position> CPathFinder::GetPath(Position start, Position end) {
 	return pathList;
 }
 
-Node* CPathFinder::PathFind(Node* parent, Position end) {
+Node* CPathFinder::PathFind(Node* parent, POS_2D end) {
 	if (Overlap_Start_End(parent->GetPosition(), end)) {
 		return parent;
 	}
 	int cnt = 0;
 	for (int i = 0; i < WAY_DIR; ++i) {
-		Position childPos = parent->GetPosition() + direction[i];
+		POS_2D childPos = parent->GetPosition() + direction[i];
 		if (IsOutMap(childPos, i)) {
 			// Position p = parent->GetPosition();
 			// cout << p.x << "\t" << childPos.x << endl;
 			// cout << p.y << "\t" << childPos.y << endl;
 			// cout << p.z << "\t" << childPos.z << endl;
 			if (parent->GetParent() != nullptr)
-				if (childPos.Compare(parent->GetParent()->GetPosition()))
+				if (childPos == parent->GetParent()->GetPosition())
 					continue;
 				// if (parent->GetParent()->GetPosition() == childPos) {
 				// 	continue;
@@ -136,38 +136,14 @@ Node* CPathFinder::PathFind(Node* parent, Position end) {
 	return PathFind(solution, end);
 }
 
-bool CPathFinder::IsOutMap(const Position& pos, int direction) {
-	// 좌표는 임시좌표(맵 미완성) 사용
-	// if (pos.x < -1807 || pos.x> 1007) return false;
-	// if (pos.y < -1407 || pos.y> 1407) return false;
-	// int xIdx = (int)pos.x + X_SIDE;
-	// int yIdx = (int)pos.y + Y_SIDE;
-	/*
-	// z축으로 이동할 수 있는 최대 높이보다 높은가
-	// if (board[xIdx][yIdx]-20 > ((int)pos.z))
-	// 	return false;
-	// if (direction == Y_UP)
-	// 	if (board[xIdx][yIdx + 10] - 50 > pos.z) {
-	// 		return false;
-	// 	}
-	// if (board[xIdx][yIdx+10] - 50 > pos.z) return false;
-	// if (board[xIdx][yIdx-10] - 50 > pos.z) return false;
-	// if (board[xIdx+10][yIdx] - 50 > pos.z) return false;
-	// if (board[xIdx-10][yIdx] - 50 > pos.z) return false;
-	// if (direction == Y_UP && board[xIdx][yIdx + 10] - 20 > pos.z) return false;
-	// if (direction == Y_DOWN && board[xIdx][yIdx - 10] - 20 > pos.z) return false;
-	// if (direction == X_UP && board[xIdx+10][yIdx] - 20 > pos.z) return false;
-	// if (direction == X_DOWN && board[xIdx-10][yIdx] - 20 > pos.z) return false;
-	*/
-	// if (board[xIdx][yIdx]-30 > pos.z) return false;
-	// return true;
-
+// bool CPathFinder::IsOutMap(const Position& pos, int direction) {
+bool CPathFinder::IsOutMap(const POS_2D& pos, int direction) {
 	if (pos.x < SIDE_MIN || pos.x > SIDE_MAX) return false;
 	if (pos.y < SIDE_MIN || pos.y > SIDE_MAX) return false;
 	int x = static_cast<int>((pos.x + (-SIDE_MIN)) / POS_SCALE);
 	int y = static_cast<int>((pos.y + (-SIDE_MIN)) / POS_SCALE);
-	float height = g_tmap->OnGetHeight(x, y) - pos.z;
-	if (height > POSSIBLE_MOVE_HEIGHT) return false;
+	// float height = g_tmap->OnGetHeight(x, y);
+	// if (height > POSSIBLE_MOVE_HEIGHT) return false;
 	return true;
 } 
 

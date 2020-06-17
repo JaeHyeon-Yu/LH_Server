@@ -5,7 +5,8 @@
 enum PACKET_TYPE {
 	login_packet, signup_packet, lobby_packet, player_packet, start_packet, init_packet, move_packet, attack_packet, act_packet, skill_packet,
 	sc_leave, sc_login, sc_signup, sc_login_fail, sc_login_ok,
-	sc_signup_ok, sc_signup_fail, sc_player_move, sc_update_obj
+	sc_signup_ok, sc_signup_fail, sc_player_move, sc_update_obj, sc_enter_obj,
+	sc_leave_obj
 };
 
 enum Login_State {
@@ -19,6 +20,10 @@ enum Lobby_State {
 	create_room, join_room, update_room, out_room, update_player,
 	ready, start,
 	standby = 10, ingame, full
+};
+
+enum OBJ_TYPE {
+	OBJ_PLAYER
 };
 
 #pragma pack(push, 1)
@@ -97,6 +102,8 @@ struct SC_UPDATE_OBJ {
 	char type;
 	Position pos;
 	short oid;
+	char state;
+	char usingPart;
 };
 struct CS_ACT {
 	char size;
@@ -139,5 +146,19 @@ struct SC_PLAYER_MOVE{
 	char type;
 	short uid;
 	Position pos;
+};
+
+struct SC_OBJECT_ENTER {
+	char size;
+	char type;
+	char o_type;
+	char name[MAXLEN];
+	Position pos;
+};
+
+struct SC_OBJECT_LEAVE {
+	char size;
+	char type;
+	int id;
 };
 #pragma pack(pop)

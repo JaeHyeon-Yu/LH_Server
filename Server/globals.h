@@ -4,7 +4,6 @@
 #define SERVERPORT 9000
 #define BUFSIZE 512
 #define ADD_FAIL -1
-#define MAX_PLAYER 10
 
 
 #define SIDE_LEN 2815

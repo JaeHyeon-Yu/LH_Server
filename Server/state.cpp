@@ -2,12 +2,12 @@
 #include <map>
 #include <array>
 #include <algorithm>
+
 IdleState* IdleState::instance;
 ChaseState* ChaseState::instance;
 AttackState* AttackState::instance;
 ReturnHomeState* ReturnHomeState::instance;
 DeadState* DeadState::instance;
-
 extern map<int, CPlayer*> g_player;
 
 // Idle State
@@ -17,9 +17,9 @@ IdleState* IdleState::GetInstance() {
 	return instance;
 }
 
+
 void IdleState::Enter(CMonster* mon) {
 	cout << "Monster[" << mon->GetID() << "] is started idle\n";
-
 }
 
 void IdleState::Execute(CMonster* mon) {
@@ -32,18 +32,21 @@ void IdleState::Execute(CMonster* mon) {
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		if (g_player[i] == NULL) continue;
 		int dis = mon->GetDistance(g_player[i]->GetPosition());
+		// auto p = g_player[i]->GetPosition();
+		// cout << p.x <<"\t"<< p.y <<"\t" <<p.z << endl;
+		// cout << "num : " << i << "\t" << dis << endl;
 		if (dis < CHASE_RANGE) disArray[i] = dis;
 	}
 	
-	int chaseID = NO_DETECTED;
-	sort(disArray.begin(), disArray.end());
+	int chaseID = 0;
 	for (int i = 0; i<MAX_PLAYER; ++i) 
 		if (disArray[i] != NO_DETECTED) {
-			chaseID = i;
-			break;
+			if (disArray[i] < disArray[chaseID])
+				chaseID = i;
 		}
+	if (disArray[chaseID] == NO_DETECTED) chaseID = NO_DETECTED;
+
 	mon->Idle();
-	cout << "Idle" << endl;
 	if (chaseID == NO_DETECTED) return;
 	mon->SetTarget(chaseID);
 	if (disArray[chaseID] < ATTACK_RANGE)
@@ -78,7 +81,6 @@ void ChaseState::Execute(CMonster* mon) {
 	if (tg == NULL) return;
 
 	mon->Chase(*tg);
-	cout << "Chase" << endl;
 	if (mon->GetDistance(tg->GetPosition()) < ATTACK_RANGE)
 		mon->ChangeState(AttackState::GetInstance());
 	else if (mon->GetDistance(mon->GetDefPosition()) > ACTIVITY_RANGE)
@@ -109,7 +111,7 @@ void AttackState::Execute(CMonster* mon) {
 	if (tg == NULL) return;
 
 	mon->Attack(*tg);
-	cout << "Attack" << endl;
+
 	if (mon->GetDistance(tg->GetPosition()) > ATTACK_RANGE)
 		mon->ChangeState(ChaseState::GetInstance());
 	
@@ -138,7 +140,6 @@ void ReturnHomeState::Execute(CMonster* mon) {
 		mon->ChangeState(IdleState::GetInstance());
 	if (mon->GetHealthPoint() < mon->GetPrevHealthPoint())
 		mon->ChangeState(ChaseState::GetInstance());
-	cout << "Home" << endl;
 }
 
 void ReturnHomeState::Exit(CMonster*) {
@@ -164,7 +165,6 @@ void DeadState::Execute(CMonster* mon) {
 		tick = 0;
 		mon->ChangeState(IdleState::GetInstance());
 	}
-	cout << "dead" << endl;
 }
 
 void DeadState::Exit(CMonster* mon) {

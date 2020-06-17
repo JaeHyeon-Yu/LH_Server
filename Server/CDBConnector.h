@@ -12,6 +12,13 @@
 #define SQL_EXUTE_FAIL 0
 #define SQL_EXUTE_OK 1
 
+struct DB_EVENT {
+	int user_id;
+	int ev_id;
+	char name[10];
+	char pass[10];
+};
+
 class CDBConnector{
 	// connect MSSQL, Use ODBC
 private:
@@ -38,3 +45,5 @@ public:
 	void DisconnectDataSource(); // free Handle
 };
 
+void DB_Thread();
+void AddQuary(int uid, int eid, const char name[], const char pass[]);

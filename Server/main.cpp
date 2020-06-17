@@ -3,21 +3,15 @@
 2015182027 À¯ÀçÇö
 */
 
-// #include "CServer.h"
 
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-#pragma comment (lib, "ws2_32.lib")
-#pragma comment (lib, "mswsock.lib")
-
-#include <iostream>
-#include <WS2tcpip.h>
-#include <MSWSock.h>
-#include <vector>
-#include <thread>
-#include <map>
-#include "CTerrain.h"
 #include "main.h"
+#include <iostream>
+#include <mutex>
+#include <MSWSock.h>
+#include "CTerrain.h"
+#include "Event.h"
+#include "Boss.h"
 
 // Global Values
 SOCKET g_listenSocket;
@@ -28,7 +22,9 @@ CTerrain *g_tmap;
 map<int, CPlayer*> g_player;
 map<int, CMonster*> g_monster;
 map<int, CObject*> g_obj;
-
+Boss *boss;
+priority_queue<int> timerQueue;
+extern queue<DB_EVENT> quaryQueue;
 int main() {
 	int retval;
 	WSADATA wsa;
@@ -58,7 +54,7 @@ int main() {
 		cout << "Fail Loading Hightmap to Terrain!\n";
 		exit(-1);
 	}
-	
+	CreateMonster(MAX_MONSTER);
 
 	CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_listenSocket), g_iocp, 999, 9);
 	SOCKET cs = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
@@ -71,7 +67,8 @@ int main() {
 	vector<thread> worker_threads;
 	for (int i = 0; i < 6; ++i)
 		worker_threads.emplace_back(worker_thread);
-	worker_threads.emplace_back(MonsterThread);
+	worker_threads.emplace_back(TimerThread);
+	worker_threads.emplace_back(DB_Thread);
 	for (auto& th : worker_threads) th.join();
 }
 
@@ -81,7 +78,7 @@ void worker_thread() {
 		ULONG_PTR key;
 		WSAOVERLAPPED* over;
 		GetQueuedCompletionStatus(g_iocp, &io_byte, &key, &over, INFINITE);
-		EXOVER *exover = reinterpret_cast<EXOVER*>(over);
+		EXOVER* exover = reinterpret_cast<EXOVER*>(over);
 		int user_id = static_cast<int>(key);
 		CLIENT& cl = g_clients[user_id];
 
@@ -90,7 +87,7 @@ void worker_thread() {
 			if (io_byte == 0) Disconnect(user_id);
 			else {
 				recv_packet_construct(user_id, io_byte);
-				ZeroMemory(&cl.recv_over, sizeof(cl.recv_over));
+				ZeroMemory(&cl.recv_over.over, sizeof(cl.recv_over.over));
 				DWORD flags = 0;
 				WSARecv(cl.sock, &cl.recv_over.wsabuf, 1, NULL, &flags, &cl.recv_over.over, NULL);
 			}
@@ -130,6 +127,17 @@ void worker_thread() {
 			AcceptEx(g_listenSocket, cs, exover->io_buf, NULL, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, NULL, &exover->over);
 		}
 			break;
+
+		case EV_BOSS:
+			boss->Update();
+			
+
+			delete exover;
+			break;
+		case EV_MONSTER:
+			g_monster[user_id]->Update();
+			delete exover;
+			break;
 		}
 	}
 }
@@ -164,30 +172,20 @@ void ProcessPacket(int uid, char* buf) {
 	case login_packet:
 	case signup_packet: {
 		// Connect DB
-		g_dbc.AllocateHandle(); 
-		g_dbc.ConnectDataSource();
+		//g_dbc.AllocateHandle(); 
+		//g_dbc.ConnectDataSource();
 		
 		CS_LOGIN* packet = reinterpret_cast<CS_LOGIN*>(buf);
 		if (buf[1] == signup_packet) SignUp(uid, *packet);
 		if (buf[1] == login_packet) Login (uid, *packet);
 
-		g_dbc.DisconnectDataSource();
+		//g_dbc.DisconnectDataSource();
 	}
 		break;
 	case move_packet: {
 		CS_MOVE* pack = reinterpret_cast<CS_MOVE*>(buf);
-		g_obj[uid]->SetPosition(pack->destination);
-		g_player[uid]->SetPosition(pack->destination);
-
-		SC_PLAYER_MOVE packet;
-		packet.size = sizeof(SC_PLAYER_MOVE);
-		packet.type = sc_player_move;
-		packet.uid = uid;
-		packet.pos = g_player[uid]->GetPosition();
-		for (auto& cl : g_clients)
-			if (cl.isconnected) {
-				send_packet(cl.id, &packet);
-			}
+		g_player[uid]->MoveTo(pack->destination);
+		
 	}
 		break;
 	default:
@@ -206,6 +204,7 @@ void send_packet(int uid, void* p) {
 	exover->wsabuf.buf = exover->io_buf;
 	exover->wsabuf.len = buf[0];
 	memcpy(exover->io_buf, buf, buf[0]);
+	// cout << (int)buf[0] << "\t" << (int)buf[1] << endl;
 	WSASend(c.sock, &exover->wsabuf, 1, NULL, 0, &exover->over, NULL);
 }
 
@@ -213,7 +212,7 @@ void Disconnect(int uid) {
 	if (0 > uid || uid >= MAX_PLAYER) return;
 	if (!g_clients[uid].isconnected) return;
 	g_clients[uid].isconnected = false;
-	g_player.erase(uid);
+	// g_player.erase(uid);
 
 	SC_LEAVE pack;
 	pack.size = sizeof(SC_LEAVE);
@@ -248,6 +247,8 @@ void SignUp(const int& uid, const CS_LOGIN& pack) {
 void Login(const int& uid, const CS_LOGIN& pack) {
 	string sql = "select * from Account where id  = \'" + (string)pack.id +
 		"\' and password = \'" + (string)pack.password + "\'";
+	AddQuary(uid, 5, pack.id, pack.password);
+	return;
 	int status;	// check login status (fail, success)
 	int ret = g_dbc.ExcuteStatementDirect((SQLCHAR*)sql.c_str());
 	if (g_dbc.RetrieveResult(pack.id, pack.password)) status = login_ok;
@@ -260,12 +261,10 @@ void Login(const int& uid, const CS_LOGIN& pack) {
 		packet.type = sc_login_ok;
 
 		g_player[uid] = new CPlayer;
-		// g_obj[uid] = new CObject;
 		g_player[uid]->Initialize(CPlayer(string(pack.id), string(pack.password)));
-		// g_obj[uid]->Initialize(Position(), Velocity(), Volume(), Accel(), obj_player);
-		for (int i = 0; i < MAX_PLAYER; ++i)
-			if (g_clients[i].isconnected)
-				send_packet(i, &packet);
+		g_player[uid]->SetState(In_Game);
+		cout << "send_login_ok" << endl;
+		send_packet(uid, &packet);
 		return;
 	}
 	else {
@@ -312,9 +311,7 @@ void monster_thread() {
 			packet.pos = g_obj[idx]->GetPosition();
 
 			for (auto& cl : g_clients)
-				if (cl.isconnected)
-					if (g_obj[cl.id]->GetDistance(g_obj[idx]->GetPosition()) < MAX_VIEW_RANGE)
-						if (cl.isconnected) send_packet(cl.id, &packet);
+				if (cl.isconnected) send_packet(cl.id, &packet);
 		}
 		
 
