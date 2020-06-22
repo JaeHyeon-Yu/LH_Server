@@ -59,6 +59,8 @@ public:
 	SC_UPDATE_OBJ MakeUpdatePacket();
 	SC_OBJECT_LEAVE MakeLeavePacket();
 
+	void EnterObj(int oid);
+	void EnterGame();
 	// ??
 	void Ready();
 

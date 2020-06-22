@@ -216,6 +216,29 @@ void CMonster::ResetRecoverCool() {
 	recoveryCoolTime = 0;
 }
 
+SC_OBJECT_ENTER CMonster::MakeEnterPacket() {
+	SC_OBJECT_ENTER p;
+	p.o_type = 1; // ¸ðµ¨¸µ Å¸ÀÔ
+	p.pos = pos;
+	p.size = sizeof(SC_OBJECT_ENTER);
+	p.type = sc_enter_obj;
+	return p;
+}
+
+SC_OBJECT_LEAVE CMonster::MakeLeavePacket() {
+	SC_OBJECT_LEAVE p;
+	p.id = m_myIdx;
+	p.type = sc_leave_obj;
+	p.size = sizeof(SC_OBJECT_LEAVE);
+	return p;
+}
+
+SC_UPDATE_OBJ CMonster::MakeUpdatePacket() {
+	SC_UPDATE_OBJ p;
+	p.oid = 1;	// ¸ðµ¨¸µ Å¸ÀÔ
+	p.pos = pos;
+	
+}
 
 void MonsterThread() {
 	CreateMonster(MAX_MONSTER);

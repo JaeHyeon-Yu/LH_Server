@@ -74,6 +74,9 @@ public:
 	int GetTarget() const;
 	int GetID() const;
 	int GetPrevHealthPoint() const;
+	SC_OBJECT_ENTER MakeEnterPacket();
+	SC_OBJECT_LEAVE MakeLeavePacket();
+	SC_UPDATE_OBJ MakeUpdatePacket();
 };
 
 void CreateMonster(int num);

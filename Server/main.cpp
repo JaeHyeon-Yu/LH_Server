@@ -25,6 +25,7 @@ map<int, CObject*> g_obj;
 Boss *boss;
 priority_queue<int> timerQueue;
 extern queue<DB_EVENT> quaryQueue;
+
 int main() {
 	int retval;
 	WSADATA wsa;
@@ -247,8 +248,8 @@ void SignUp(const int& uid, const CS_LOGIN& pack) {
 void Login(const int& uid, const CS_LOGIN& pack) {
 	string sql = "select * from Account where id  = \'" + (string)pack.id +
 		"\' and password = \'" + (string)pack.password + "\'";
-	AddQuary(uid, 5, pack.id, pack.password);
-	return;
+	// AddQuary(uid, 5, pack.id, pack.password);
+	// return;
 	int status;	// check login status (fail, success)
 	int ret = g_dbc.ExcuteStatementDirect((SQLCHAR*)sql.c_str());
 	if (g_dbc.RetrieveResult(pack.id, pack.password)) status = login_ok;
@@ -261,10 +262,26 @@ void Login(const int& uid, const CS_LOGIN& pack) {
 		packet.type = sc_login_ok;
 
 		g_player[uid] = new CPlayer;
-		g_player[uid]->Initialize(CPlayer(string(pack.id), string(pack.password)));
-		g_player[uid]->SetState(In_Game);
+		auto& my = g_player[uid];
+		my->Initialize(CPlayer(string(pack.id), string(pack.password)));
+		my->SetState(In_Game);
 		cout << "send_login_ok" << endl;
-		send_packet(uid, &packet);
+		send_packet(uid, &packet);	// login_ok
+
+		// send enter
+		SC_OBJECT_ENTER to_other_pack;
+		strcpy_s(to_other_pack.name, pack.id);
+		to_other_pack.o_type = 0;	// ¸ðµ¨¸µ Å¸ÀÔ
+		to_other_pack.pos = my->GetPosition();
+		to_other_pack.size = sizeof(SC_OBJECT_ENTER);
+		to_other_pack.type = sc_enter_obj;
+
+		for (auto& p : g_player) {
+			if (p.second == NULL) continue;
+			if (my->GetDistance(p.second->GetPosition()) < MAX_VIEW_RANGE) {
+				send_packet(p.second->GetIdx(), &to_other_pack);
+			}
+		}
 		return;
 	}
 	else {

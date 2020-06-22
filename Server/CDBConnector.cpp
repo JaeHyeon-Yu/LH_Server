@@ -184,7 +184,9 @@ void DB_Thread() {
 				dbc->RetrieveResult(ev.name, ev.pass);
 			}break;
 			case EV_UPDATE: {
-				string sql;
+				string sql = "EXEC Update_User " + (string)ev.name;
+				dbc->ExcuteStatementDirect((SQLCHAR*)sql.c_str());
+				// dbc->RetrieveResult(ev.name);
 			}break;
 			}
 		}

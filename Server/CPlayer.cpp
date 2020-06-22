@@ -172,3 +172,29 @@ SC_OBJECT_LEAVE CPlayer::MakeLeavePacket() {
 	p.id = m_idx;
 	return p;
 }
+
+void CPlayer::EnterGame() {
+	auto myEnter = MakeEnterPacket();
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (m_idx == i) continue;
+		if (g_player[i] == NULL) continue;
+		if (GetDistance(g_player[i]->pos) < MAX_VIEW_RANGE) {
+			send_packet(i, &myEnter);
+			send_packet(m_idx, &g_player[i]->MakeEnterPacket());
+		}
+	}
+	for (int i = 0; i < MAX_MONSTER; ++i) {
+		if (m_idx == i) continue;
+		if (g_monster[i] == NULL) continue;
+		if (GetDistance(g_monster[i]->GetPosition()) < MAX_VIEW_RANGE)
+			send_packet(m_idx, &g_monster[i]->MakeEnterPacket());
+	}
+	// if (GetDistance(boss->GetPosition()) < MAX_VIEW_RANGE)
+	
+}
+
+void CPlayer::EnterObj(int oid) {
+	pLock.lock();
+	viewList.insert(oid);
+	pLock.unlock();
+}
