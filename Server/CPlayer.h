@@ -20,13 +20,16 @@ private:
 	std::string m_id;
 	std::string m_pass;
 	int m_state{not_login};
-	int m_level;
-
+	int level;
+	int exp;
 	int m_roomNum;
 	int m_idx;
 	bool m_ready{ false };
 	bool m_host{ false };
-
+	int healthPoint;
+	int magicPoint;
+	int atkPoint;
+	int objType;
 	Position pos;
 	unordered_set<int> viewList;
 	mutex pLock;
@@ -36,7 +39,7 @@ public:
 	~CPlayer();
 
 	void Initialize(const CPlayer& p);
-
+	void Initialize(int hp, int o_type, int exp, int lv, int mp, int atk, int x, int y);
 	// overloading
 	bool operator== (const CPlayer& cp) const;
 	
@@ -65,6 +68,7 @@ public:
 	void Ready();
 
 	void Update(const CS_PLAYER& pack);
+	void Update();
 
 	void Attck();
 

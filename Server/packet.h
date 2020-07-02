@@ -1,12 +1,13 @@
 #pragma once
 #include "Physics.h"
 #define MAXLEN 10
+#define MAX_CHAT_LEN 80
 
 enum PACKET_TYPE {
 	login_packet, signup_packet, lobby_packet, player_packet, start_packet, init_packet, move_packet, attack_packet, act_packet, skill_packet,
 	sc_leave, sc_login, sc_signup, sc_login_fail, sc_login_ok,
 	sc_signup_ok, sc_signup_fail, sc_player_move, sc_update_obj, sc_enter_obj,
-	sc_leave_obj
+	sc_leave_obj, cs_chat, sc_chat
 };
 
 enum Login_State {
@@ -160,5 +161,19 @@ struct SC_OBJECT_LEAVE {
 	char size;
 	char type;
 	int id;
+};
+
+struct CS_CHAT {
+	char size;
+	char type;
+	short uid;
+	char chat[MAX_CHAT_LEN];
+};
+
+struct SC_CHAT {
+	char size;
+	char type;
+	short uid;
+	char chat[MAX_CHAT_LEN];
 };
 #pragma pack(pop)

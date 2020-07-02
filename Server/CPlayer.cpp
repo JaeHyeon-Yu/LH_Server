@@ -21,7 +21,7 @@ CPlayer::~CPlayer() {
 void CPlayer::Initialize(const CPlayer& p) {
 	m_id = p.m_id;
 	m_pass = p.m_pass;
-	m_level = p.m_level;
+	level = p.level;
 	pos = { 28600.f,77420.f,-39726.f };	
 	/*
 	28600.0
@@ -29,6 +29,19 @@ void CPlayer::Initialize(const CPlayer& p) {
 	-39726.15625
 	*/
 }
+
+void CPlayer::Initialize(int hp, int o_type, int exp, int lv, int mp, int atk, int x, int y) {
+	healthPoint = hp;
+	objType = o_type;
+	this->exp = exp;
+	level = lv;
+	magicPoint = mp;
+	atkPoint = atk;
+	pos.x = x;
+	pos.y = y;
+	
+}
+
 bool CPlayer::operator== (const CPlayer& cp) const {
 	return m_id == cp.m_id;
 }

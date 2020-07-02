@@ -3,8 +3,6 @@
 2015182027 유재현
 */
 
-
-
 #include "main.h"
 #include <iostream>
 #include <mutex>
@@ -131,8 +129,6 @@ void worker_thread() {
 
 		case EV_BOSS:
 			boss->Update();
-			
-
 			delete exover;
 			break;
 		case EV_MONSTER:
@@ -186,9 +182,17 @@ void ProcessPacket(int uid, char* buf) {
 	case move_packet: {
 		CS_MOVE* pack = reinterpret_cast<CS_MOVE*>(buf);
 		g_player[uid]->MoveTo(pack->destination);
-		
+		// 좌표 관련 send/recv도 함수 안에서 이루어짐
 	}
 		break;
+	case cs_chat: {
+		CS_CHAT* pack = reinterpret_cast<CS_CHAT*>(buf);
+		SC_CHAT s_pack;
+		s_pack.size = sizeof(SC_CHAT);
+		s_pack.type = sc_chat;
+		for (auto& cl : g_clients)
+			if (cl.isconnected);
+	}break;
 	default:
 		cout << "Unknown Packet Type Error!" << endl;
 		DebugBreak();

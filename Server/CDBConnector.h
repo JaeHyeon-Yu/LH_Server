@@ -42,6 +42,9 @@ public:
 	void PrepareStatement(SQLCHAR* sql); // Excute SQL with prepare
 	void ExcuteStatement(); // Excute prepared SQL
 	bool RetrieveResult(std::string id, std::string pass); // Read SQL result
+
+	bool RetrieveResultLogin(int uid);
+
 	bool RetrieveResultUpdate(std::string id);
 	void DisconnectDataSource(); // free Handle
 };
