@@ -132,7 +132,9 @@ void worker_thread() {
 			delete exover;
 			break;
 		case EV_MONSTER:
-			g_monster[user_id]->Update();
+			if (user_id < NPC_ID_START) break;
+			if (g_monster[user_id] != NULL)
+				g_monster[user_id]->Update();
 			delete exover;
 			break;
 		}
@@ -191,7 +193,23 @@ void ProcessPacket(int uid, char* buf) {
 		s_pack.size = sizeof(SC_CHAT);
 		s_pack.type = sc_chat;
 		for (auto& cl : g_clients)
-			if (cl.isconnected);
+			if (cl.isconnected) send_packet(cl.id, &s_pack);
+	}break;
+	case cs_attack: {
+		SC_OBJ_ATTACK pack;
+		pack.size = sizeof(SC_OBJ_ATTACK);
+		pack.type = sc_attack;
+		pack.oid = uid;
+		for (auto& oid : g_player[uid]->viewList)
+			if (oid <= 10000)
+				if (g_clients[oid].isconnected) 
+					send_packet(oid, &pack);
+	}break;
+	case cs_fireball: {
+		SC_FIREBALL pack;
+		pack.size = sizeof(SC_FIREBALL);
+		pack.type = sc_fireball;
+		pack.oid = uid;
 	}break;
 	default:
 		cout << "Unknown Packet Type Error!" << endl;
@@ -252,8 +270,8 @@ void SignUp(const int& uid, const CS_LOGIN& pack) {
 void Login(const int& uid, const CS_LOGIN& pack) {
 	string sql = "select * from Account where id  = \'" + (string)pack.id +
 		"\' and password = \'" + (string)pack.password + "\'";
-	// AddQuary(uid, 5, pack.id, pack.password);
-	// return;
+	AddQuary(uid, 5, pack.id, pack.password);
+	return;
 	int status;	// check login status (fail, success)
 	int ret = g_dbc.ExcuteStatementDirect((SQLCHAR*)sql.c_str());
 	if (g_dbc.RetrieveResult(pack.id, pack.password)) status = login_ok;
@@ -269,6 +287,7 @@ void Login(const int& uid, const CS_LOGIN& pack) {
 		auto& my = g_player[uid];
 		my->Initialize(CPlayer(string(pack.id), string(pack.password)));
 		my->SetState(In_Game);
+		my->SetIdx(uid);
 		cout << "send_login_ok" << endl;
 		send_packet(uid, &packet);	// login_ok
 

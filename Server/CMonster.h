@@ -11,6 +11,7 @@
 #define START_POINT_MONSTER 10'000
 #define IDLE_RANGE 5
 #define NO_DETECTED -1
+#define NPC_ID_START 100000
 enum monster_state {
 	idle, attack, move, chase, return_home,
 	normal

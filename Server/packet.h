@@ -7,7 +7,7 @@ enum PACKET_TYPE {
 	login_packet, signup_packet, lobby_packet, player_packet, start_packet, init_packet, move_packet, attack_packet, act_packet, skill_packet,
 	sc_leave, sc_login, sc_signup, sc_login_fail, sc_login_ok,
 	sc_signup_ok, sc_signup_fail, sc_player_move, sc_update_obj, sc_enter_obj,
-	sc_leave_obj, cs_chat, sc_chat
+	sc_leave_obj, cs_chat, sc_chat, cs_attack, cs_guard, sc_attack, sc_guard, cs_fireball, sc_fireball
 };
 
 enum Login_State {
@@ -110,7 +110,6 @@ struct CS_ACT {
 	char size;
 	char type;
 	char detailType;
-	unsigned short idx;
 };
 
 // New Packets
@@ -154,6 +153,7 @@ struct SC_OBJECT_ENTER {
 	char type;
 	char o_type;
 	char name[MAXLEN];
+	short oid;
 	Position pos;
 };
 
@@ -176,4 +176,84 @@ struct SC_CHAT {
 	short uid;
 	char chat[MAX_CHAT_LEN];
 };
+
+struct CS_ATTACK {
+	char size;
+	char type;
+};
+
+struct CS_GUARD {
+	char size;
+	char type;
+};
+
+struct SC_OBJ_ATTACK{
+	char size;
+	char type;
+	short oid;
+};
+
+struct SC_OBJ_GUARD {
+	char size;
+	char type;
+	short oid;
+};
+
+struct CS_FIREBALL {
+	char size;
+	char type;
+};
+
+struct SC_FIREBALL {
+	char size;
+	char type;
+	short oid;
+};
+
+struct CS_JUMP {
+	char size;
+	char type;
+};
+
+struct SC_JUMP {
+	char size;
+	char type;
+	short oid;
+};
+
+struct CS_EVADE {
+	char size;
+	char type;
+};
+
+struct SC_EVADE {
+	char size;
+	char type;
+	short oid;
+};
+
+struct CS_WEAPON_ON {
+	char size;
+	char type;
+	char w_type;
+};
+
+struct SC_WEAPON_ON {
+	char size;
+	char type;
+	char w_type;
+	short oid;
+};
+
+struct CS_WEAPON_OFF {
+	char size;
+	char type;
+};
+
+struct SC_WEAPON_OFF {
+	char size;
+	char type;
+	short oid;
+};
+
 #pragma pack(pop)

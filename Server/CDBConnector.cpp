@@ -140,20 +140,21 @@ bool CDBConnector::RetrieveResultLogin(int uid) {
 	SQLINTEGER u_hp, u_oType, u_exp, u_level, u_mp, u_atk, u_x, u_y;
 	SQLLEN l_hp, l_oType, l_exp, l_level, l_mp, l_atk, l_x, l_y;
 
-	SQLBindCol(hstmt, 1, SQL_C_LONG, &u_hp, 10, &l_hp);
-	SQLBindCol(hstmt, 2, SQL_C_LONG, &u_oType, 10, &l_oType);
-	SQLBindCol(hstmt, 3, SQL_C_LONG, &u_exp, 10, &l_exp);
+	SQLBindCol(hstmt, 1, SQL_C_LONG, &u_atk, 10, &l_atk);
+	SQLBindCol(hstmt, 2, SQL_C_LONG, &u_hp, 10, &l_hp);
+	SQLBindCol(hstmt, 3, SQL_C_LONG, &u_mp, 10, &l_mp);
 	SQLBindCol(hstmt, 4, SQL_C_LONG, &u_level, 10, &l_level);
-	SQLBindCol(hstmt, 5, SQL_C_LONG, &u_mp, 10, &l_mp);
-	SQLBindCol(hstmt, 6, SQL_C_LONG, &u_atk, 10, &l_atk);
-	SQLBindCol(hstmt, 7, SQL_C_LONG, &u_x, 10, &l_x);
-	SQLBindCol(hstmt, 8, SQL_C_LONG, &u_y, 10, &l_y);
+	SQLBindCol(hstmt, 5, SQL_C_LONG, &u_exp, 10, &l_exp);
+	SQLBindCol(hstmt, 6, SQL_C_LONG, &u_x, 10, &l_x);
+	SQLBindCol(hstmt, 7, SQL_C_LONG, &u_y, 10, &l_y);
+	SQLBindCol(hstmt, 8, SQL_C_LONG, &u_oType, 10, &l_oType);
 
 	retcode = SQLFetch(hstmt);
 
 	SQLFreeStmt(hstmt, SQL_UNBIND);
 
 	if (retcode == SQL_SUCCESS) {
+		if (g_player[uid] == NULL) g_player[uid] = new CPlayer;
 		g_player[uid]->Initialize(u_hp, u_oType, u_exp, u_level, u_mp, u_atk, u_x, u_y);
 		cout << "Load Player's Data Success!" << endl;
 		return true;
@@ -205,8 +206,6 @@ void DB_Thread() {
 				string sql = "EXEC Login_User " + (string)ev.name + ", " + (string)ev.pass;
 				dbc->ExcuteStatementDirect((SQLCHAR*)sql.c_str());
 				dbc->RetrieveResultLogin(ev.user_id);
-				// EXOVER *exover = new EXOVER;
-				// PostQueuedCompletionStatus(g_iocp, 1, ev.user_id, &exover->over);
 			}break;
 			case EV_SIGN: {
 				string sql = "EXEC Sign_User " + (string)ev.name + ", " + (string)ev.pass;
@@ -217,12 +216,10 @@ void DB_Thread() {
 					strcpy_s(new_ev.name, ev.name);
 					quaryQueue.push(new_ev);
 				}
-				// dbc->RetrieveResult(ev.name, ev.pass);
 			}break;
 			case EV_UPDATE: {
 				string sql = "EXEC Update_User " + (string)ev.name;
 				dbc->ExcuteStatementDirect((SQLCHAR*)sql.c_str());
-				// dbc->RetrieveResult(ev.name);
 			}break;
 			}
 		}

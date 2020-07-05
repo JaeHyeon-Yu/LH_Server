@@ -31,8 +31,10 @@ private:
 	int atkPoint;
 	int objType;
 	Position pos;
-	unordered_set<int> viewList;
 	mutex pLock;
+public:
+	unordered_set<int> viewList;
+
 public:
 	CPlayer() = default;
 	CPlayer(std::string id, std::string pass);

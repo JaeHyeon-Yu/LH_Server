@@ -166,6 +166,7 @@ SC_OBJECT_ENTER CPlayer::MakeEnterPacket() {
 	p.o_type = OBJ_PLAYER;
 	strcpy_s(p.name, m_id.c_str());
 	p.pos = pos;
+	p.oid = m_idx;
 	return p;
 }
 
