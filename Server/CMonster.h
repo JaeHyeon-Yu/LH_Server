@@ -8,10 +8,10 @@
 #define CHASE_RANGE 1000'00
 #define MONSTER_MAX_HP 100
 #define BOSS_IDX 200'000
-#define START_POINT_MONSTER 10'000
+#define START_POINT_MONSTER 10000
 #define IDLE_RANGE 5
 #define NO_DETECTED -1
-#define NPC_ID_START 100000
+#define NPC_ID_START 10000
 enum monster_state {
 	idle, attack, move, chase, return_home,
 	normal

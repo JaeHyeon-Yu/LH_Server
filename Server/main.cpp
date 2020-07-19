@@ -227,7 +227,7 @@ void send_packet(int uid, void* p) {
 	exover->wsabuf.buf = exover->io_buf;
 	exover->wsabuf.len = buf[0];
 	memcpy(exover->io_buf, buf, buf[0]);
-	// cout << (int)buf[0] << "\t" << (int)buf[1] << endl;
+	cout << (int)buf[0] << "\t" << (int)buf[1] << endl;
 	WSASend(c.sock, &exover->wsabuf, 1, NULL, 0, &exover->over, NULL);
 }
 

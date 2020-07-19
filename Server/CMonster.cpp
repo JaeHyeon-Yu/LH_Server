@@ -217,6 +217,7 @@ void CMonster::ResetRecoverCool() {
 }
 
 SC_OBJECT_ENTER CMonster::MakeEnterPacket() {
+	// cout << "enter_monster" << endl;
 	SC_OBJECT_ENTER p;
 	p.o_type = 1; // 모델링 타입
 	p.pos = pos;
@@ -243,7 +244,7 @@ SC_UPDATE_OBJ CMonster::MakeUpdatePacket() {
 void MonsterThread() {
 	CreateMonster(MAX_MONSTER);
 	while (true) {
-		for (int i = 0; i < MAX_MONSTER; ++i) {
+		for (int i = 10'000; i < MAX_MONSTER; ++i) {
 			if (g_monster[i] == NULL) continue;
 			g_monster[i]->Update();
 			SC_UPDATE_OBJ pack;
@@ -264,15 +265,17 @@ void MonsterThread() {
 
 void CreateMonster(int num) {
 	Position defPos{ 31990.f,74330.f,-40000.f };
-	// defPos = { 29000.f,77000.f,-39726.f };	// 플레이어 바로 앞
+	// 14900.0, 78160.0 -432.0
+	// 15580.0 77800.0 -490.0
+	defPos = { 15580.f, 77800.f, -490.f };	// 플레이어 바로 앞
 	for (int i = 0; i < num; ++i) {
 		short idx = START_POINT_MONSTER + i;
 		// defPos.x = xdis(gen);
 		// defPos.y = ydis(gen);
 		// defPos.z = board[(int)defPos.x + X_SIDE][(int)defPos.y + Y_SIDE];
-		g_monster[i] = new CMonster;
-		g_monster[i]->Initialize(defPos, normal);
-		
+		g_monster[idx] = new CMonster;
+		g_monster[idx]->Initialize(defPos, normal);
+		// g_monster[idx];
 
 		// m_kdTree->Insert(*m_obj[idx]);
 	}

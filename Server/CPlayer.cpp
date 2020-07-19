@@ -80,10 +80,11 @@ void CPlayer::MoveTo(const Position& p) {
 		if (i == m_idx) continue;
 		newVl.insert(i);
 	}
-	for (int i = 0; i < MAX_MONSTER; ++i) {
+	for (int i = START_POINT_MONSTER; i < START_POINT_MONSTER+MAX_MONSTER; ++i) {
+		// cout << i << endl;
 		if (g_monster[i] == NULL) continue;
 		if (GetDistance(g_monster[i]->GetPosition()) > MAX_VIEW_RANGE) continue;
-		newVl.insert(START_POINT_MONSTER + i);	// player index와 구분한다
+		newVl.insert(i);	// player index와 구분한다
 		// PSCS
 	}
 	if (boss != NULL || GetDistance(boss->GetPosition()))
@@ -95,13 +96,18 @@ void CPlayer::MoveTo(const Position& p) {
 	for (auto& no : newVl) {
 		if (oldVl.count(no) == 0) {	// 기존 뷰리스트엔 x 새 뷰리스트에 in
 			// no enter packet to me
-			send_packet(m_idx, &g_player[no]->MakeEnterPacket());
+			if (no < 10000)
+				send_packet(m_idx, &g_player[no]->MakeEnterPacket());
+			else if (no >= 20000) continue;	// Boss
+			else send_packet(m_idx, &g_monster[no]->MakeEnterPacket());
+			viewList.insert(no);	// 뷰리스트에 추가
 			if (!(no < MAX_PLAYER)) continue;
 			g_player[no]->pLock.lock();
 			if (g_player[no]->viewList.count(m_idx) == 0) {
 				// my enter packet to no 
 				g_player[no]->pLock.unlock();
 				send_packet(no, &MakeEnterPacket());
+				g_player[no]->viewList.insert(m_idx);
 			}
 			else {
 				g_player[no]->pLock.unlock();
@@ -121,6 +127,7 @@ void CPlayer::MoveTo(const Position& p) {
 			else {
 				g_player[no]->pLock.unlock();
 				send_packet(no, &MakeEnterPacket());
+				g_player[no]->viewList.insert(m_idx);
 				// my enter packet ro no
 			}
 		}
