@@ -1,10 +1,10 @@
 #pragma once
 #include "CTerrain.h"
 #include "node.h"
-#define WAY_DIR 4
+#define WAY_DIR 8
 
 
-#define MAX_LIST_LEN 1000
+#define MAX_LIST_LEN 100
 
 class CPathFinder {
 private:

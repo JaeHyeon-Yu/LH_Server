@@ -153,7 +153,7 @@
     <ClInclude Include="KDTree.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="node.h" />
-    <ClInclude Include="packet.h" />
+    <ClInclude Include="protocol.h" />
     <ClInclude Include="Physics.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

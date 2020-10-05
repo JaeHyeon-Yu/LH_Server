@@ -2,27 +2,37 @@
 #include "CObject.h"
 #include "CPlayer.h"
 #include "CPathFinder.h"
-#define MAX_MONSTER 1
+#define MAX_MONSTER 10000
 #define ACTIVITY_RANGE 4000'00
-#define ATTACK_RANGE 200
-#define CHASE_RANGE 1000'00
+#define ATTACK_RANGE 300
+#define CHASE_RANGE 2000
 #define MONSTER_MAX_HP 100
-#define BOSS_IDX 200'000
+#define BOSS_IDX 20'000
 #define START_POINT_MONSTER 10000
 #define IDLE_RANGE 5
 #define NO_DETECTED -1
 #define NPC_ID_START 10000
+
+#define GOBLIN_ID_START 10000
+#define CYCLOPS_ID_START 11000
+#define BEETLE_ID_START 12000
+#define MINI_GOLEM_ID_START 13000
+
 enum monster_state {
 	idle, attack, move, chase, return_home,
 	normal
 };
+enum M_STATE {
+	M_IDLE, M_CHASE, M_ATTACK, M_RHOME, M_DEAD
+};
+
 
 class State;
 
 class CMonster
 {
 private:
-	int m_myIdx;
+	int id;
 	int xIdx, zIdx;
 	
 	Position m_defaultPos;
@@ -33,14 +43,25 @@ private:
 
 	int m_activityRange;
 	int m_state{idle};
-	int m_healthPoint;
+	int healthPoint;
 	int m_type;
 	State *state;
 	int target{ NO_DETECTED };
 	int prevHealth;
 	int recoveryCoolTime = 0;
-	
+	int exp;
+	int atkPoint;
+
+	int atkRange;
+
+	Position rotation;
+	Position velocity;
+
+	int player_dir[MAX_PLAYER];
 public:
+	bool isActive;
+	M_STATE monState;
+	Position chaseEndPos;
 	CMonster() = default;
 	~CMonster() = default;
 
@@ -48,8 +69,10 @@ public:
 	void Update(CObject& my, const CObject& other);
 	void Update();
 	void Idle();
-	void Attack(const CPlayer& target);
+	void Attack(CPlayer& target);
 	void Chase(const CPlayer& target);
+
+	void UpdateWithClient();
 	 
 	void ChangeState(State* newState);
 
@@ -58,6 +81,12 @@ public:
 	void SetPrevHealthPoint();
 
 	void ResetRecoverCool();
+
+	int TakeDamage(int atk_point);
+
+	void Death();
+
+	void UpdateTarget();
 
 	// Getter & Setter
 	void SetState(const int& state);
@@ -70,6 +99,7 @@ public:
 	void SetPosition(const Position& pos);
 	Position GetPosition() const;
 	Position GetDefPosition() const;
+	Position GetRotation() const;
 	int GetDistance(Position pos);
 	void SetTarget(const int& t);
 	int GetTarget() const;
@@ -78,9 +108,21 @@ public:
 	SC_OBJECT_ENTER MakeEnterPacket();
 	SC_OBJECT_LEAVE MakeLeavePacket();
 	SC_UPDATE_OBJ MakeUpdatePacket();
+	SC_DAMAGED MakeDamagedPacket();
+	void SetIndex(const int& idx);
+	int GetEXP() const;
+	int GetHP() const;
+	int GetAtkRange() const;
+
+	void SetVelocity(const Position& v);
+	void SetRotation(const Position& r);
+
+	bool IsFront(const Position& player_pos);
 };
 
-void CreateMonster(int num);
+float GetDegree(Position p1, Position p2);
+void CreateMonsters(int num);
+void SpawnMonster(int id, float x, float y, float z, int type);
 void monster_thread();
 void MonsterThread();
 

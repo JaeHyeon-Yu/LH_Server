@@ -27,10 +27,10 @@ list<POS_2D> CPathFinder::GetPath(POS_2D start, POS_2D end) {
 	direction[X_DOWN] = { -1,0};
 	direction[Y_UP]   = { 0,1 };
 	direction[Y_DOWN] = { 0,-1 };
-	// direction[4] = { 1,1,0 };
-	// direction[5] = { 1,-1,0 };
-	// direction[6] = { -1,1,0 };
-	// direction[7] = { -1,-1,0 };
+	direction[4] = { 1,1 };
+	direction[5] = { 1,-1 };
+	direction[6] = { -1,1 };
+	direction[7] = { -1,-1 };
 	// FindPath();
 	if (Overlap_Start_End(start, end))
 		return pathList;
@@ -112,9 +112,9 @@ Node* CPathFinder::PathFind(Node* parent, POS_2D end) {
 			solution = ol;
 		// ol->SetCostG(ol->GetCostG() + 10);
 	}
-	if (cnt == 1)
-	 for (auto& ol : openList)
-	 	openList.remove(ol);
+	// if (cnt == 1)
+	//  for (auto& ol : openList)
+	//  	openList.remove(ol);
 	/*
 	오케이 지금 문제가 새로 들어오는 노드가 
 	빙 돌아서 가야하니까 기존 노드들보다 코스트가 더 높아서 
@@ -157,7 +157,6 @@ bool CPathFinder::IsOverlap(Node* node) {
 			// cout << "ff - " << ol->GetCostF() << "\t" << node->GetCostF() << endl;
 			if (ol->GetCostG() > node->GetCostG()) {
 				openList.remove(ol);
-				cout << "ㅁㄴㅇㄹ" << endl;
 				node->SetCostG(node->GetParent()->GetCostG() + 10);
 				openList.push_back(node);
 				return true;

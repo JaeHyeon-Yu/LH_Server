@@ -1,5 +1,5 @@
 //#include "CServer.h"
-//#include "packet.h"
+//#include "protocol.h"
 //#define NOT_JOIN_ANY_ROOM -1
 //#define NOT_LOGIN -1
 //#define SUB_SUCCESS 0

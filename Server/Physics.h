@@ -3,6 +3,9 @@
 #include <math.h>
 #include <iostream>
 using namespace std;
+
+#define Pi 3.141592
+
 struct Position {
 	float x, y, z;
 	Position() = default;
@@ -18,6 +21,17 @@ struct Position {
 		np.z = z + p.z;
 		return np;
 	}
+	Position operator-(const Position& p) {
+		Position np{ x - p.x, y - p.y, z - p.z };
+		return np;
+	}
+	Position operator*(const float& scalar) {
+		Position np{ x*scalar, y*scalar, z*scalar };
+		return np;
+	}
+	float DotProduct(const Position& p) {
+		return cos(p.x*x + p.y*y + p.z*z);
+	}
 	bool operator==(const Position& p) {
 		if ((int)p.x != (int)x) return false;
 		if ((int)p.y != (int)y) return false;
@@ -31,6 +45,10 @@ struct Position {
 	void Show() const {
 		cout << x << "\t" << y << "\t" << z << endl;
 	}
+	bool IsZero() const {
+		if ((int)x == 0 && (int)y == 0) return true;
+		return false;
+	}
 };
 
 struct Velocity {
@@ -38,6 +56,12 @@ struct Velocity {
 };
 struct Volume {
 	int x, y, z;
+	Volume() = default;
+	Volume(float a, float b, float c) {
+		x = a;
+		y = b;
+		z = c;
+	}
 };
 struct Accel {
 	int x, y, z;

@@ -12,6 +12,8 @@ extern map<int, CPlayer*> g_player;
 default_random_engine dre;
 uniform_int_distribution<> uid;
 
+extern void send_packet(int uid, void* p);
+
 void Boss::Initialize(const int& id, const Position& p) {
 	HealthPoint& hp = healthPoint;
 	hp.body_hp = MAX_BODY_HP;
@@ -34,6 +36,19 @@ void Boss::Initialize(const int& id, const Position& p) {
 
 	pathFinder = new CPathFinder;
 	// AddTimer(0, 4, high_resolution_clock::now(), 0);
+
+	BoneMap[R_HAND] = 20;
+	BoneMap[R_FOREARM] = 22;
+	BoneMap[R_UPPERARM] = 24;
+	BoneMap[R_FOOR] = 20;
+	BoneMap[R_CALF] = 22;
+	BoneMap[R_THIGHT] = 24;
+	BoneMap[L_HAND] = 5;
+	BoneMap[L_FOREARM] = 7;
+	BoneMap[L_UPPERARM] = 9;
+	BoneMap[L_FOOR] = 20;
+	BoneMap[L_CALF] = 22;
+	BoneMap[L_THIGHT] = 24;
 }
 
 void Boss::Respawn() {
@@ -174,6 +189,38 @@ void Boss::Update() {
 	else isActive = false;
 }
 
+void Boss::BoneMapUpdate(char* new_boneMap) {
+	for (int i = 0; i < NUM_PARTS; ++i) {
+		boneLock.lock();
+		if (new_boneMap[i] < BoneMap[i]) {
+			if (BoneMap[i] <= 0) {
+				boneLock.unlock();
+				continue;
+			}
+			BoneMap[i] -= 1;
+			boneLock.unlock();
+			if (BoneMap[i] <= 0) {
+				cout << "보스 부위 파괴" << endl;
+				SC_BONE_BREAK pack{ sizeof(SC_BONE_BREAK), sc_bone_break, id, i };
+				for (int i = 0; i < MAX_PLAYER; ++i) {
+					if (g_player[i] == NULL) continue;
+					send_packet(i, &pack);
+				}
+			}
+			else {
+				SC_BONE_UPDATE pack{ sizeof(SC_BONE_UPDATE), sc_bone_update, id, i };
+				pack.attacked = BoneMap[i];
+				for (int i = 0; i < MAX_PLAYER; ++i) {
+					if (g_player[i] == NULL) continue;
+					send_packet(i, &pack);
+				}
+			}
+		}
+		else boneLock.unlock();
+	}
+	
+}
+
 void Boss::IsPartDestroyed() {  
 	if (healthPoint.left_hand_hp <= 0) isDestroy.leftHand = true;
 	if (healthPoint.right_hand_hp <= 0) isDestroy.rightHand = true;
@@ -202,13 +249,30 @@ int Boss::GetTotalHP() const {
 		healthPoint.right_hand_hp + healthPoint.left_leg_hp + healthPoint.right_leg_hp;;
 }
 
+void Boss::SetPosition(const Position& p) {
+	pos = p;
+}
+
+void Boss::SetRotation(const Position& p) {
+	rotation = p;
+}
+
+SC_OBJECT_ENTER Boss::MakeEnterPacket() {
+	SC_OBJECT_ENTER p;
+	p.size = sizeof(SC_OBJECT_ENTER);
+	p.type = sc_enter_obj;
+	p.o_type = OBJ_GOLEM;	/// 나중에 이걸로 몬스터 종류 나누고 그래야함
+	p.oid = id;
+	p.pos = pos;
+	return p;
+}
+
 SC_UPDATE_OBJ Boss::MakeUpdatePacket() {
 	SC_UPDATE_OBJ p;
 	p.type = sc_update_obj;
 	p.size = sizeof(SC_UPDATE_OBJ);
 	p.oid = 0;
 	p.pos = pos;
-	p.state = state->state;
-	p.usingPart = state->usingPart;
+
 	return p;
 }

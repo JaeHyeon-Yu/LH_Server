@@ -20,9 +20,13 @@ CTerrain *g_tmap;
 map<int, CPlayer*> g_player;
 map<int, CMonster*> g_monster;
 map<int, CObject*> g_obj;
+map<int, Boss*> g_boss;
 Boss *boss;
 priority_queue<int> timerQueue;
 extern queue<DB_EVENT> quaryQueue;
+
+bool mons[4];
+
 
 int main() {
 	int retval;
@@ -30,6 +34,8 @@ int main() {
 	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return 0;
 	g_listenSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
 	if (g_listenSocket == INVALID_SOCKET) return 0; // error quit
+
+
 	SOCKADDR_IN serverAddr;
 	ZeroMemory(&serverAddr, sizeof(serverAddr));
 	serverAddr.sin_family = AF_INET;
@@ -40,10 +46,15 @@ int main() {
 	listen(g_listenSocket, SOMAXCONN);
 	g_iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 0);
 
+	// Set socket option
+	BOOL option = TRUE;
+	setsockopt(g_listenSocket, IPPROTO_TCP, TCP_NODELAY, (char*)& option, sizeof(option));
+
 	// 초기화
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		g_clients[i].isconnected = false;
 		g_clients[i].id = i;
+		// g_player[i] = new CPlayer;
 	}
 
 	CTerrain* tmap = new CTerrain;
@@ -53,7 +64,7 @@ int main() {
 		cout << "Fail Loading Hightmap to Terrain!\n";
 		exit(-1);
 	}
-	CreateMonster(MAX_MONSTER);
+	CreateMonsters(MAX_MONSTER);
 
 	CreateIoCompletionPort(reinterpret_cast<HANDLE>(g_listenSocket), g_iocp, 999, 9);
 	SOCKET cs = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);
@@ -96,7 +107,7 @@ void worker_thread() {
 			delete exover;
 			break;
 		case OP_ACCEPT:{
-			cout << "1234" << endl;
+			cout << "New Client Connect \n";
 			int user_id = -1;
 			for (int i = 0; i < MAX_PLAYER; ++i)
 				if (!g_clients[i].isconnected) {
@@ -111,6 +122,8 @@ void worker_thread() {
 				nc.id = user_id;
 				nc.prev_size = 0;
 				nc.recv_over.op = OP_RECV;
+				g_player[user_id] = new CPlayer;
+				g_player[user_id]->SetIdx(user_id);
 
 				ZeroMemory(&nc.recv_over.over, sizeof(nc.recv_over.over));
 				nc.recv_over.wsabuf.buf = nc.recv_over.io_buf;
@@ -124,8 +137,7 @@ void worker_thread() {
 			exover->c_sock = cs;
 			ZeroMemory(&exover->over, sizeof(exover->over));
 			AcceptEx(g_listenSocket, cs, exover->io_buf, NULL, sizeof(sockaddr_in) + 16, sizeof(sockaddr_in) + 16, NULL, &exover->over);
-		}
-			break;
+		}break;
 
 		case EV_BOSS:
 			boss->Update();
@@ -135,6 +147,10 @@ void worker_thread() {
 			if (user_id < NPC_ID_START) break;
 			if (g_monster[user_id] != NULL)
 				g_monster[user_id]->Update();
+			delete exover;
+			break;
+		case EV_FIREBALL:
+			g_player[user_id]->fireball.Update();
 			delete exover;
 			break;
 		}
@@ -168,52 +184,202 @@ void recv_packet_construct(int uid, int io_byte) {
 
 void ProcessPacket(int uid, char* buf) {
 	switch (buf[1]) {
-	case login_packet:
-	case signup_packet: {
+	case cs_login:
+	case cs_signup: {
 		// Connect DB
 		//g_dbc.AllocateHandle(); 
 		//g_dbc.ConnectDataSource();
 		
 		CS_LOGIN* packet = reinterpret_cast<CS_LOGIN*>(buf);
-		if (buf[1] == signup_packet) SignUp(uid, *packet);
-		if (buf[1] == login_packet) Login (uid, *packet);
-
+		if (buf[1] == cs_signup) SignUp(uid, *packet);
+		if (buf[1] == cs_login) {
+			Login(uid, *packet);
+			// SC_LOGIN_OK pack;
+			// pack.uid = uid;
+			// pack.type = sc_login_ok;
+			// pack.size = sizeof(SC_LOGIN_OK);
+			// strcpy_s(pack.name, g_player[uid]->GetID().c_str());	
+			// send_packet(uid, &pack);
+			g_player[uid]->EnterGame();
+		}
 		//g_dbc.DisconnectDataSource();
 	}
 		break;
 	case move_packet: {
 		CS_MOVE* pack = reinterpret_cast<CS_MOVE*>(buf);
+		if (g_player[uid] == NULL) break;
+		g_player[uid]->SetVelocity(pack->velocity);
+		g_player[uid]->SetRotation(pack->rotation);
 		g_player[uid]->MoveTo(pack->destination);
-		// 좌표 관련 send/recv도 함수 안에서 이루어짐
-	}
-		break;
+		// 좌표 관련 send도 함수 안에서 이루어짐
+	}break;
 	case cs_chat: {
 		CS_CHAT* pack = reinterpret_cast<CS_CHAT*>(buf);
 		SC_CHAT s_pack;
 		s_pack.size = sizeof(SC_CHAT);
 		s_pack.type = sc_chat;
-		for (auto& cl : g_clients)
-			if (cl.isconnected) send_packet(cl.id, &s_pack);
 	}break;
 	case cs_attack: {
-		SC_OBJ_ATTACK pack;
-		pack.size = sizeof(SC_OBJ_ATTACK);
-		pack.type = sc_attack;
-		pack.oid = uid;
-		for (auto& oid : g_player[uid]->viewList)
-			if (oid <= 10000)
-				if (g_clients[oid].isconnected) 
-					send_packet(oid, &pack);
+		g_player[uid]->Attck();
 	}break;
 	case cs_fireball: {
 		SC_FIREBALL pack;
 		pack.size = sizeof(SC_FIREBALL);
 		pack.type = sc_fireball;
 		pack.oid = uid;
+		g_player[uid]->FireBall();
+		for (auto& oid : g_player[uid]->viewList)
+			if (oid <= MAX_PLAYER)
+				send_packet(oid, &pack);
+	}break;
+	case cs_guard: {
+		g_player[uid]->Guard();
+		
+	}break;
+	case cs_jump: {
+		SC_JUMP pack;
+		pack.size = sizeof(SC_JUMP);
+		pack.type = sc_jump;
+		pack.oid = uid;
+		for (auto& oid : g_player[uid]->viewList)
+			if (oid < MAX_PLAYER)
+				send_packet(oid, &pack);
+	}break;
+	case cs_evade: {
+		g_player[uid]->Evade();
+	}break;
+	case cs_weapon_on: {
+		if (g_player[uid]->isWpnOn) break;
+		SC_WEAPON_ON pack;
+		pack.size = sizeof(SC_WEAPON_ON);
+		pack.type = sc_weapon_on;
+		pack.oid = uid;
+		g_player[uid]->isWpnOn = true;
+		for (auto& oid : g_player[uid]->viewList)
+			if (oid < MAX_PLAYER)
+				send_packet(oid, &pack);
+	}break;
+	case cs_weapon_off: {
+		SC_WEAPON_OFF pack;
+		pack.size = sizeof(SC_WEAPON_OFF);
+		pack.type = sc_weapon_off;
+		pack.oid = uid;
+		g_player[uid]->isWpnOn = false;
+		for (auto& oid : g_player[uid]->viewList)
+			if (oid < MAX_PLAYER)
+				send_packet(oid, &pack);
+	}break;
+	case cs_sword_on: {
+		g_player[uid]->WeaponOn(wpn_sword);
+		
+	}break;
+	case cs_sword_off: {
+		g_player[uid]->WeaponOff(wpn_sword);
+		
+	}break;
+	case cs_hammer_on: {
+		g_player[uid]->WeaponOn(wpn_hammer);
+		
+	}break;
+	case cs_hammer_off: {
+		g_player[uid]->WeaponOff(wpn_hammer);
+		
+	}break;
+	case cs_berserk: {
+		g_player[uid]->Berserk();
+	}break;
+	case cs_ready: {
+		g_player[uid]->Ready();
+	}break;
+	case cs_boss_move: {
+		CS_BOSS_MOVE* pack = reinterpret_cast<CS_BOSS_MOVE*>(buf);
+		if (g_boss[BOSS_IDX] == NULL) break;
+		g_boss[BOSS_IDX]->SetRotation(pack->rotation);
+		g_boss[BOSS_IDX]->SetPosition(pack->destination);
+		SC_UPDATE_OBJ spack{ sizeof(SC_UPDATE_OBJ), sc_update_obj };
+		spack.oid = BOSS_IDX;
+		spack.pos = pack->destination;
+		spack.rotation = pack->rotation;
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			if (uid == i) continue;
+			send_packet(i, &spack);
+		}
+	}break;
+	case cs_hide: {
+		g_player[uid]->Hide();
+	}break;
+	case cs_hide_off: {
+		g_player[uid]->HideOff();
+	}break;
+	case cs_assassin: {
+		g_player[uid]->Assassinate();
+	}break;
+	case cs_move_stop: {
+		SC_MOVE_STOP pack{ sizeof(SC_MOVE_STOP), sc_move_stop, uid };
+		pack.pos = g_player[uid]->GetPosition();
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			send_packet(i, &pack);
+		}
+	}break;
+	case cs_npc_move: {
+		CS_NPC_MOVE* p = reinterpret_cast<CS_NPC_MOVE*>(buf);
+
+		if (p->oid < BOSS_IDX) {
+			if (g_monster[p->oid] == NULL) return;
+			g_monster[p->oid]->SetPosition(p->pos);
+			// g_monster[p->oid]->SetVelocity(p->velocity);
+			// g_monster[p->oid]->SetRotation(p->roatation);
+			g_monster[p->oid]->UpdateWithClient();
+			
+		}
+		else {
+			if (boss == NULL) return;
+			boss->SetPosition(p->pos);
+			// boss->SetRotation(p->roatation);
+		}
+		return;
+		if (g_monster[p->oid] == NULL) return;
+		g_monster[p->oid]->SetPosition(p->pos);
+		return;
+		
+	}break;
+	case cs_boss_attack: {
+		CS_BOSS_ATTACK* pack = reinterpret_cast<CS_BOSS_ATTACK*>(buf);
+		if (g_boss[pack->oid] == NULL) break;
+		cout << "boss is attack" << endl;
+		SC_BOSS_ATTACK s_pack{ sizeof(s_pack), sc_boss_attack, pack->oid, pack->atk_num };
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			if (uid == i) continue;
+			send_packet(i, &s_pack);
+		}
+	}break;
+	case cs_boss_bone: {
+		CS_BOSS_BONE* pack = reinterpret_cast<CS_BOSS_BONE*>(buf);
+		if (g_boss[pack->oid] == NULL) break;
+		g_boss[pack->oid]->BoneMapUpdate(pack->boneMap);
+	}break;
+
+	case cs_sync_fail: {
+		CS_SYNC_FAIL* pack = reinterpret_cast<CS_SYNC_FAIL*>(buf);
+		if (pack->oid < MAX_PLAYER) { // player
+		}
+		else if (pack->oid < BOSS_IDX) { // monster
+		}
+		else {	// boss
+		}
+	}break;
+	case cs_update_move_state: {
+		CS_UPDATE_MOVE_STATE* pack = reinterpret_cast<CS_UPDATE_MOVE_STATE*>(buf);
+		if (g_player[uid] == NULL) break;
+		g_player[uid]->SetMoveState(static_cast<Movement_State>(pack->state));
 	}break;
 	default:
 		cout << "Unknown Packet Type Error!" << endl;
-		DebugBreak();
+		Disconnect(uid);
+		// DebugBreak();
 		exit(-1);
 	}
 }
@@ -227,15 +393,17 @@ void send_packet(int uid, void* p) {
 	exover->wsabuf.buf = exover->io_buf;
 	exover->wsabuf.len = buf[0];
 	memcpy(exover->io_buf, buf, buf[0]);
-	cout << (int)buf[0] << "\t" << (int)buf[1] << endl;
 	WSASend(c.sock, &exover->wsabuf, 1, NULL, 0, &exover->over, NULL);
 }
 
 void Disconnect(int uid) {
+	cout << "Disconnect " << g_player[uid]->GetID() << uid << endl;
 	if (0 > uid || uid >= MAX_PLAYER) return;
-	if (!g_clients[uid].isconnected) return;
-	g_clients[uid].isconnected = false;
+	g_player[uid]->isAlive = false;
 	// g_player.erase(uid);
+	g_player[uid] = NULL;
+	g_clients[uid].isconnected = false;
+	closesocket(g_clients[uid].sock);
 
 	SC_LEAVE pack;
 	pack.size = sizeof(SC_LEAVE);
@@ -243,7 +411,7 @@ void Disconnect(int uid) {
 	pack.id = uid;
 
 	for (int i = 0; i < MAX_PLAYER; ++i)
-		if (g_clients[i].isconnected)
+		if (g_player[i] != NULL)
 			send_packet(i, &pack);
 }
 
@@ -315,47 +483,3 @@ void Login(const int& uid, const CS_LOGIN& pack) {
 		send_packet(uid, &packet);
 	}
 }
-
-void monster_thread() {
-	CreateMonster(MAX_MONSTER);
-	while (true) {
-		for (int i = 0; i < MAX_MONSTER; ++i) {
-			short idx = START_POINT_MONSTER + i;
-			if (g_monster[idx] == NULL) continue;
-			if (g_monster[idx]->GetHealthPoint() < 0) continue;
-			int distance;
-			int firstNearPlayer = 0;
-			bool isdetected = false;
-
-			// 시야 내의 가장 가까운 플레이어 탐색
-			for (int j = 0; j < MAX_PLAYER; ++j) {
-				if (g_player[j] == NULL) continue;
-				isdetected = true;
-				distance = g_obj[idx]->GetDistance(g_obj[j]->GetPosition());
-				if (distance > g_obj[idx]->GetDistance(g_obj[firstNearPlayer]->GetPosition())) continue;
-				if (distance < CHASE_RANGE) firstNearPlayer = j;
-			}
-
-			if (!isdetected) continue;
-
-			// 가장 가까운 플레이어
-			distance = g_obj[idx]->GetDistance(g_obj[firstNearPlayer]->GetPosition());
-			if (distance < ATTACK_RANGE) g_monster[idx]->SetState(attack);
-			else if (distance < CHASE_RANGE) g_monster[idx]->SetState(chase);
-			else if (g_obj[idx]->GetDistance(g_obj[idx]->GetPosition()))
-				g_monster[idx]->SetState(return_home);
-
-			SC_UPDATE_OBJ packet;
-			packet.size = sizeof(SC_UPDATE_OBJ);
-			packet.type = sc_update_obj;
-			packet.pos = g_obj[idx]->GetPosition();
-
-			for (auto& cl : g_clients)
-				if (cl.isconnected) send_packet(cl.id, &packet);
-		}
-		
-
-		Sleep(1000 / 60);
-	}
-}
-

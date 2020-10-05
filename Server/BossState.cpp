@@ -145,7 +145,6 @@ void BossDead::Exit(Boss*) {
 
 }
 
-
 // DashAttack
 BossDashAttack* BossDashAttack::GetInstance() {
 	if (instance == nullptr)
