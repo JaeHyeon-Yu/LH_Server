@@ -140,7 +140,11 @@ void worker_thread() {
 		}break;
 
 		case EV_BOSS:
-			boss->Update();
+			if (g_boss[BOSS_IDX] == NULL) {
+				delete exover;
+				break;
+			}
+			g_boss[BOSS_IDX]->Update();
 			delete exover;
 			break;
 		case EV_MONSTER:
@@ -228,9 +232,7 @@ void ProcessPacket(int uid, char* buf) {
 		pack.type = sc_fireball;
 		pack.oid = uid;
 		g_player[uid]->FireBall();
-		for (auto& oid : g_player[uid]->viewList)
-			if (oid <= MAX_PLAYER)
-				send_packet(oid, &pack);
+		
 	}break;
 	case cs_guard: {
 		g_player[uid]->Guard();
@@ -241,9 +243,10 @@ void ProcessPacket(int uid, char* buf) {
 		pack.size = sizeof(SC_JUMP);
 		pack.type = sc_jump;
 		pack.oid = uid;
-		for (auto& oid : g_player[uid]->viewList)
-			if (oid < MAX_PLAYER)
-				send_packet(oid, &pack);
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			send_packet(i, &pack);
+		}
 	}break;
 	case cs_evade: {
 		g_player[uid]->Evade();
@@ -357,6 +360,7 @@ void ProcessPacket(int uid, char* buf) {
 		}
 	}break;
 	case cs_boss_bone: {
+		break;
 		CS_BOSS_BONE* pack = reinterpret_cast<CS_BOSS_BONE*>(buf);
 		if (g_boss[pack->oid] == NULL) break;
 		g_boss[pack->oid]->BoneMapUpdate(pack->boneMap);

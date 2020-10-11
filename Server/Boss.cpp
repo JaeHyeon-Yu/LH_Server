@@ -18,22 +18,33 @@ void Boss::Initialize(const int& id, const Position& p) {
 	HealthPoint& hp = healthPoint;
 	hp.body_hp = MAX_BODY_HP;
 	hp.left_hand_hp = hp.right_hand_hp = MAX_HAND_HP;
-	hp.left_leg_hp = hp.right_leg_hp = MAX_LEG_HP;
+	hp.right_calf_hp = hp.right_calf_hp = MAX_CALF_HP;
+	hp.left_forearm_hp = hp.right_forearm_hp = MAX_FOREARM_HP;
+	hp.left_calf_hp = hp.right_calf_hp = MAX_CALF_HP;
+	hp.left_foot_hp = hp.right_foot_hp = MAX_FOOT_HP;
+	hp.left_thigh_hp = hp.right_thigh_hp = MAX_THIGH_HP;
 	hp.head_hp = MAX_HEAD_HP;
 
-	isDestroy.body = false;
 	isDestroy.head = false;
 	isDestroy.leftHand = false;
 	isDestroy.rightHand = false;
-	isDestroy.leftLeg = false;
-	isDestroy.rightLeg = false;
+	isDestroy.rightForearm = false;
+	isDestroy.rightUpperarm = false;
+	isDestroy.rightFoot = false;
+	isDestroy.rightThigh = false;
+	isDestroy.rightCalf = false;
+	isDestroy.leftForearm = false;
+	isDestroy.leftUpperarm = false;
+	isDestroy.leftFoot = false;
+	isDestroy.leftThigh = false;
+	isDestroy.leftCalf = false;
 
 	defaultPos = pos = p;
 	target = -1;
 	this->id = id;
 	state = BossIdle::GetInstance();
-	isActive = false;
-
+	isActive = true;
+	
 	pathFinder = new CPathFinder;
 	// AddTimer(0, 4, high_resolution_clock::now(), 0);
 
@@ -51,28 +62,16 @@ void Boss::Initialize(const int& id, const Position& p) {
 	BoneMap[L_THIGHT] = 24;
 }
 
-void Boss::Respawn() {
-	HealthPoint& hp = healthPoint;
-	hp.body_hp = MAX_BODY_HP;
-	hp.left_hand_hp = hp.right_hand_hp = MAX_HAND_HP;
-	hp.left_leg_hp = hp.right_leg_hp = MAX_LEG_HP;
-	hp.head_hp = MAX_HEAD_HP;
-
-	isDestroy.body = false;
-	isDestroy.head = false;
-	isDestroy.leftHand = false;
-	isDestroy.rightHand = false;
-	isDestroy.leftLeg = false;
-	isDestroy.rightLeg = false;
-
-	pos = defaultPos;
-	target = -1;
-	isActive = false;
-	chasePath.clear();
-}
-
 B_STATE Boss::Idle() {
 	// return B_DEAD;
+	cout << "Boss idle\n";
+	auto dis = BOSS_ACTIVITY_RANGE;
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		auto p_dis = GetDistance(pos, g_player[i]->GetPosition());
+		if (p_dis < dis && p_dis > 0) return B_ATTACK;
+	}
+	return B_IDLE;
 
 	// 타겟 플레이어 검색
 	array<int, MAX_PLAYER> disArray;
@@ -90,12 +89,13 @@ B_STATE Boss::Idle() {
 					chaseID = i;
 	if (disArray[chaseID] == NO_DETECTED) chaseID = NO_DETECTED;
 	
+
 	// 1
-	if (isDestroy.rightLeg && isDestroy.rightLeg)
+	if (isDestroy.rightFoot && isDestroy.rightFoot)
 		return B_THROW_ATK;
 	
 	if (50 < disArray[target] && disArray[target] < 200) // 돌진
-		if (!isDestroy.rightLeg && !isDestroy.leftLeg) 
+		if (!isDestroy.rightFoot && !isDestroy.leftFoot) 
 			return B_DASH_ATK;
 
 	if (disArray[target] <= 50) {
@@ -142,10 +142,64 @@ B_STATE Boss::Chase() {
 
 B_STATE Boss::Attack() {
 	// 다리 파괴시 던지기만 사용한다
-	if (isDestroy.leftLeg || isDestroy.rightLeg)
-		if (!(isDestroy.rightHand && isDestroy.leftHand))
-			return B_THROW_ATK;
-		else return B_IDLE;
+	// if (isDestroy.leftFoot || isDestroy.rightFoot)
+	// 	if (!(isDestroy.rightHand && isDestroy.leftHand))
+	// 		return B_THROW_ATK;
+	// 	else return B_IDLE;
+
+	int targetID = 0;
+	int targetDis = GetDistance(pos, g_player[targetID]->GetPosition());
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		auto dis = GetDistance(pos, g_player[i]->GetPosition());
+		if (targetDis < dis) {
+			if (dis < 0) continue;
+			if (dis > BOSS_ACTIVITY_RANGE) continue;
+			targetID = i;
+			targetDis = dis;
+		}
+	}
+
+	if (targetDis < 0 || targetDis > BOSS_ACTIVITY_RANGE) return B_ATTACK;
+
+	if (isDestroy.leftFoot || isDestroy.rightFoot) {
+		// 노멀어택, 핸드클랩, 스윕, 펀치, 다운어택
+		if (!isDestroy.leftHand && !isDestroy.rightHand) {
+			switch (uid(dre) % 5) {
+			case 0: return B_HANDCLAP_ATK; break;
+			case 1: return B_SWING_ATK; break;
+			case 2: return B_PUNCH_ATK; break;
+			case 3: return B_DOWN_ATK; break;
+			case 4: return B_NORMAL_ATK;  break;
+			}
+		}
+		else if (isDestroy.leftHand) {
+			if (isDestroy.rightHand) return B_NORMAL_ATK;
+			return B_SWING_ATK;
+		}
+		else if (isDestroy.rightHand) {
+			if (isDestroy.leftHand) return B_NORMAL_ATK;
+			switch (uid(dre) % 2){
+			case 0: return B_PUNCH_ATK; break;
+			case 1: return B_NORMAL_ATK; break;
+			}
+		}
+		/*
+		왼 노멀 펀치
+		오 스윙
+		*/
+
+	}
+	else {
+		// 창던지기, 돌던지기, 돌진, 밟기
+		switch (uid(dre) % 4) {
+		case 0: return B_THROW_ATK; break;
+		case 1: return B_STOMP_ATK; break;
+		case 2: return B_DASH_ATK; break;
+		case 3: return B_ICESPEAR_ATK; break;
+		}
+	}
+	return B_ATTACK;
+
 	// 손이 남아있으면 휘두르기 or 내려치기 -> 어느 손으로 할지는 저 안에서 결정하기
 	if (!(isDestroy.rightHand && isDestroy.leftHand)) {
 		if (isDestroy.head) {}	// 머가리 깨졌으면 아무 행동안하고 밑으로 내려버리기
@@ -171,22 +225,26 @@ B_STATE Boss::Attack() {
 }
 
 void Boss::Update() {
-	if (GetTotalHP() <= 0) ChangeState(BossDead::GetInstance());
+	if (healthPoint.body_hp <= 0) {
+		ChangeState(BossDead::GetInstance());
+		AddTimer(id, 4, chrono::high_resolution_clock::now()+1s, target);
+		return;
+	}
 	else IsPartDestroyed();
 	state->Execute(this);
 	auto nextTime = chrono::high_resolution_clock::now() + 1s;
 	// 일단 임의로 1초로 설정 추후 애니메이션 프레임도 보고 실제 돌아가는거 보고 상태별로 조정필요함
-	if (state == BossDead::GetInstance()) nextTime += 60s;	// 스폰쿨타임
-	bool keepAlive = false;
-	for (int i = 0; i < MAX_PLAYER; ++i)
-		if (g_player[i] != NULL)
-			if (GetDistance(g_player[i]->GetPosition(), pos) < MAX_VIEW_RANGE) {
-				keepAlive = true;
-				break;
-			}
-	if (keepAlive) 
-		AddTimer(id, 4, nextTime, target);	// EV_BOSS
-	else isActive = false;
+	// if (state == BossDead::GetInstance()) nextTime += 60s;	// 스폰쿨타임
+	// bool keepAlive = false;
+	// for (int i = 0; i < MAX_PLAYER; ++i)
+	// 	if (g_player[i] != NULL)
+	// 		if (GetDistance(g_player[i]->GetPosition(), pos) < MAX_VIEW_RANGE) {
+	// 			keepAlive = true;
+	// 			break;
+	// 		}
+	// if (keepAlive) 
+	AddTimer(id, 4, nextTime, target);	// EV_BOSS
+	// else isActive = false;
 }
 
 void Boss::BoneMapUpdate(char* new_boneMap) {
@@ -224,10 +282,9 @@ void Boss::BoneMapUpdate(char* new_boneMap) {
 void Boss::IsPartDestroyed() {  
 	if (healthPoint.left_hand_hp <= 0) isDestroy.leftHand = true;
 	if (healthPoint.right_hand_hp <= 0) isDestroy.rightHand = true;
-	if (healthPoint.left_leg_hp <= 0) isDestroy.leftLeg = true;
-	if (healthPoint.right_leg_hp <= 0) isDestroy.rightLeg = true;
+	if (healthPoint.left_forearm_hp <= 0) isDestroy.leftForearm = true;
+	if (healthPoint.right_forearm_hp <= 0) isDestroy.rightForearm = true;
 	if (healthPoint.head_hp <= 0) isDestroy.head = true;
-	if (healthPoint.body_hp <= 0) isDestroy.body = true;
 }
 
 void Boss::ChangeState(BossState* ns){
@@ -245,8 +302,7 @@ Position Boss::GetPosition() const {
 }
 
 int Boss::GetTotalHP() const {
-	return healthPoint.body_hp + healthPoint.head_hp + healthPoint.left_hand_hp +
-		healthPoint.right_hand_hp + healthPoint.left_leg_hp + healthPoint.right_leg_hp;;
+	
 }
 
 void Boss::SetPosition(const Position& p) {
@@ -255,6 +311,14 @@ void Boss::SetPosition(const Position& p) {
 
 void Boss::SetRotation(const Position& p) {
 	rotation = p;
+}
+
+int Boss::GetTarget() const {
+	return target;
+}
+
+int Boss::GetID() const {
+	return id;
 }
 
 SC_OBJECT_ENTER Boss::MakeEnterPacket() {

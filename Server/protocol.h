@@ -485,13 +485,6 @@ struct CS_BOSS_ATTACK {
 	short atk_num;
 };
 
-struct SC_BOSS_ATTACK {
-	char size;
-	char type;
-	short oid;
-	short atk_num;
-};
-
 struct CS_BOSS_BONE {
 	char size;
 	char type;
@@ -545,6 +538,14 @@ struct SC_UPDATE_MOVE_STATE {
 	char type;
 	short oid;
 	short state;
+};
+
+struct SC_BOSS_ATTACK {
+	char size;
+	char type;
+	short oid;
+	char atk_state;
+	Position target;
 };
 
 #pragma pack(pop)

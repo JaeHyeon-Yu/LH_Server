@@ -238,7 +238,8 @@ void CPlayer::Evade() {
 	SC_EVADE pack{ sizeof(SC_EVADE), sc_evade, id };
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		if (g_player[i] == NULL) continue;
-		send_packet(i, &pack);
+		if (i == id) continue;
+		// send_packet(i, &pack);
 	}
 	AddTimer(id, EV_EVADE_OFF, high_resolution_clock::now() + 2s, NULL);
 }
@@ -373,12 +374,21 @@ void CPlayer::MoveTo(const Position& p) {
 		if (i == id) continue;
 		newVl.insert(i);
 	}
-	for (int i = NPC_ID_START; i < START_POINT_MONSTER+MAX_MONSTER; ++i) {
-		// cout << i << endl;
-		if (g_monster[i] == NULL) continue;
-		if (GetDistance(g_monster[i]->GetPosition()) > MAX_VIEW_RANGE) continue;
-		newVl.insert(i);	// player index와 구분한다
+	// for (int i = NPC_ID_START; i < START_POINT_MONSTER+MAX_MONSTER; ++i) {
+	// 	// cout << i << endl;
+	// 	if (g_monster[i] == NULL) continue;
+	// 	if (GetDistance(g_monster[i]->GetPosition()) > MAX_VIEW_RANGE) continue;
+	// 	if (g_monster[i]->isActive) break;
+	// 	AddTimer(i, EV_MONSTER, chrono::high_resolution_clock::now() + 1s, NULL);
+	// 	g_monster[i]->isActive = true;
+	// 	newVl.insert(i);	// player index와 구분한다
+	// }
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		if (i == id) continue;
+		send_packet(i, &MakeUpdatePacket());
 	}
+	return;
 	// if (boss != NULL || GetDistance(boss->GetPosition()))
 	// 	newVl.insert(BOSS_IDX);	// Boss를 얼마나 스폰시킬지 몰라서 일단 단일개체로 설정함
 	/// 일단 보스빼고 송수신해보자
@@ -562,6 +572,9 @@ void CPlayer::EnterGame() {
 		pack.type = sc_set_host;
 		send_packet(id, &pack);
 	}
+	// Sleep(1000);
+	// pos = { 59060.0, 55640.0, 1970.0 };
+	// send_packet(id, &MakeUpdatePacket());
 }
 
 void CPlayer::EnterObj(int oid) {
