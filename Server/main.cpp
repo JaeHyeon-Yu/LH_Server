@@ -360,7 +360,6 @@ void ProcessPacket(int uid, char* buf) {
 		}
 	}break;
 	case cs_boss_bone: {
-		break;
 		CS_BOSS_BONE* pack = reinterpret_cast<CS_BOSS_BONE*>(buf);
 		if (g_boss[pack->oid] == NULL) break;
 		g_boss[pack->oid]->BoneMapUpdate(pack->boneMap);

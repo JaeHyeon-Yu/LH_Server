@@ -1,6 +1,7 @@
 #include "BossState.h"
 #include "Boss.h"
 #include "CPlayer.h"
+#include "Event.h"
 #include <map>
 
 extern map<int, CPlayer*> g_player;
@@ -20,6 +21,7 @@ BossHandClapAttack* BossHandClapAttack::instance;
 
 
 extern void send_packet(int uid, void* p);
+extern float GetDegree(Position p1, Position p2);
 
 void ChangeNextState(Boss* b, B_STATE nextState) {
 	switch (nextState) {
@@ -83,6 +85,7 @@ void BossIdle::Enter(Boss*){
 void BossIdle::Execute(Boss* b) {
 	B_STATE nextState = b->Idle();
 	if (nextState != B_IDLE) ChangeNextState(b, nextState);
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 1s, b->GetTarget());
 }
 
 void BossIdle::Exit(Boss*) {
@@ -134,9 +137,20 @@ void BossAttack::Execute(Boss* b) {
 	// 여기서 어떤 공격할지 골라서 반환해주고 다음 타임에서 그 행동을 한다
 	// 이름은 ATTACK이지만 사실상 공격대기 상태
 	B_STATE nextAttack = b->Attack();
-	if (nextAttack == B_ATTACK) return;
+	if (nextAttack == B_ATTACK) {
+		AddTimer(b->GetID(), 4, high_resolution_clock::now() + 1s, b->GetTarget());
+		return;
+	}
 	if (nextAttack == B_NORMAL_ATK) {
 		cout << "Boss use Normal-Attack!\n";
+		SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+		auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+		rpack.rot = { 0,ydegree,0 };
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			send_packet(i, &rpack);
+		}
+
 		SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 		pack.atk_state = B_NORMAL_ATK;
 		pack.target = g_player[b->GetTarget()]->GetPosition();
@@ -146,6 +160,7 @@ void BossAttack::Execute(Boss* b) {
 		}
 	}
 	else ChangeNextState(b, nextAttack);
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 1s, b->GetTarget());
 	// SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, nextAttack };
 	// pack.target = g_player[b->GetTarget()]->GetPosition();
 	// for (int i = 0; i < MAX_PLAYER; ++i) {
@@ -198,6 +213,27 @@ void BossDashAttack::Enter(Boss*) {
 }
 
 void BossDashAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
+	cout << "Boss use Dash-Attack!\n";
+	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
+	pack.atk_state = B_DASH_ATK;
+	pack.target = g_player[b->GetTarget()]->GetPosition();
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &pack);
+	}
+	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
+	return;
 	auto b_destroy = b->GetIsDestroy();
 	usingPart = B_USING_NONE;	// 발을 사용하지만 한쪽만 나가리되도 못쓰니까 일단 None으로 설정한다
 	if (b_destroy.leftFoot || b_destroy.rightFoot)
@@ -221,9 +257,26 @@ void BossSwingAttack::Enter(Boss*) {
 }
 
 void BossSwingAttack::Execute(Boss* b) {
-	cout << "Boss use Swing Attack\n";
+	if (g_player[b->GetTarget()] == NULL) return;
 
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
+	cout << "Boss use Swing-Attack!\n";
+	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
+	pack.atk_state = B_SWING_ATK;
+	pack.target = g_player[b->GetTarget()]->GetPosition();
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &pack);
+	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 3s, b->GetTarget());
 	return;
 	auto b_destroy = b->GetIsDestroy();
 	if (b_destroy.leftHand && b_destroy.rightHand) {
@@ -259,6 +312,27 @@ void BossStrikeAttack::Enter(Boss*) {
 }
 
 void BossStrikeAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
+	cout << "Boss use Strike-Attack!\n";
+	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
+	pack.atk_state = B_STRIKE_ATK;
+	pack.target = g_player[b->GetTarget()]->GetPosition();
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &pack);
+	}
+	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 3s, b->GetTarget());
+	return; 
 	auto b_destroy = b->GetIsDestroy();
 	if (b_destroy.leftHand && b_destroy.rightHand) {
 		b->ChangeState(BossAttack::GetInstance());
@@ -293,6 +367,16 @@ void BossThrowAttack::Enter(Boss*) {
 }
 
 void BossThrowAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
 	cout << "Boss use Throw-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 	pack.atk_state = B_THROW_ATK;
@@ -302,6 +386,7 @@ void BossThrowAttack::Execute(Boss* b) {
 		send_packet(i, &pack);
 	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
 	return;
 
 	// 구버전
@@ -339,6 +424,16 @@ void BossStompAttack::Enter(Boss*) {
 }
 
 void BossStompAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
 	cout << "Boss use Stomp-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 	pack.atk_state = B_STOMP_ATK;
@@ -348,6 +443,7 @@ void BossStompAttack::Execute(Boss* b) {
 		send_packet(i, &pack);
 	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
 }
 
 void BossStompAttack::Exit(Boss*) {
@@ -367,6 +463,16 @@ void BossIceSpearAttack::Enter(Boss*) {
 }
 
 void BossIceSpearAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
 	cout << "Boss use IceSpear-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 	pack.atk_state = B_ICESPEAR_ATK;
@@ -376,6 +482,7 @@ void BossIceSpearAttack::Execute(Boss* b) {
 		send_packet(i, &pack);
 	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
 }
 
 void BossIceSpearAttack::Exit(Boss*) {
@@ -395,6 +502,16 @@ void BossHandClapAttack::Enter(Boss*) {
 }
 
 void BossHandClapAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
 	cout << "Boss use HandClap-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 	pack.atk_state = B_HANDCLAP_ATK;
@@ -404,6 +521,7 @@ void BossHandClapAttack::Execute(Boss* b) {
 		send_packet(i, &pack);
 	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
 }
 
 void BossHandClapAttack::Exit(Boss*) {
@@ -423,6 +541,16 @@ void BossPunchAttack::Enter(Boss*) {
 }
 
 void BossPunchAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
 	cout << "Boss use Punch-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 	pack.atk_state = B_PUNCH_ATK;
@@ -432,6 +560,7 @@ void BossPunchAttack::Execute(Boss* b) {
 		send_packet(i, &pack);
 	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
 }
 
 void BossPunchAttack::Exit(Boss*) {
@@ -451,6 +580,16 @@ void BossDownAttack::Enter(Boss*) {
 }
 
 void BossDownAttack::Execute(Boss* b) {
+	if (g_player[b->GetTarget()] == NULL) return;
+
+	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
+	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
+	rpack.rot = { 0,ydegree,0 };
+	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
+		send_packet(i, &rpack);
+	}
+
 	cout << "Boss use Down-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
 	pack.atk_state = B_DOWN_ATK;
@@ -460,6 +599,7 @@ void BossDownAttack::Execute(Boss* b) {
 		send_packet(i, &pack);
 	}
 	b->ChangeState(BossAttack::GetInstance());
+	AddTimer(b->GetID(), 4, high_resolution_clock::now() + 5s, b->GetTarget());
 }
 
 void BossDownAttack::Exit(Boss*) {

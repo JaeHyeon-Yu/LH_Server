@@ -47,6 +47,7 @@ void Boss::Initialize(const int& id, const Position& p) {
 	
 	pathFinder = new CPathFinder;
 	// AddTimer(0, 4, high_resolution_clock::now(), 0);
+	pos = { 22976.5,35731.7,-932.3 };
 
 	BoneMap[R_HAND] = 20;
 	BoneMap[R_FOREARM] = 22;
@@ -64,12 +65,12 @@ void Boss::Initialize(const int& id, const Position& p) {
 
 B_STATE Boss::Idle() {
 	// return B_DEAD;
-	cout << "Boss idle\n";
-	auto dis = BOSS_ACTIVITY_RANGE;
+	// cout << "Boss idle\n";
+	// auto dis = BOSS_ACTIVITY_RANGE;
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		if (g_player[i] == NULL) continue;
 		auto p_dis = GetDistance(pos, g_player[i]->GetPosition());
-		if (p_dis < dis && p_dis > 0) return B_ATTACK;
+		if (p_dis < BOSS_ACTIVITY_RANGE && p_dis > 0) return B_ATTACK;
 	}
 	return B_IDLE;
 
@@ -148,8 +149,9 @@ B_STATE Boss::Attack() {
 	// 	else return B_IDLE;
 
 	int targetID = 0;
-	int targetDis = GetDistance(pos, g_player[targetID]->GetPosition());
+	int targetDis = BOSS_ACTIVITY_RANGE;
 	for (int i = 0; i < MAX_PLAYER; ++i) {
+		if (g_player[i] == NULL) continue;
 		auto dis = GetDistance(pos, g_player[i]->GetPosition());
 		if (targetDis < dis) {
 			if (dis < 0) continue;
@@ -158,7 +160,7 @@ B_STATE Boss::Attack() {
 			targetDis = dis;
 		}
 	}
-
+	if (g_player[targetID] != NULL) target = targetID;
 	if (targetDis < 0 || targetDis > BOSS_ACTIVITY_RANGE) return B_ATTACK;
 
 	if (isDestroy.leftFoot || isDestroy.rightFoot) {
@@ -232,7 +234,8 @@ void Boss::Update() {
 	}
 	else IsPartDestroyed();
 	state->Execute(this);
-	auto nextTime = chrono::high_resolution_clock::now() + 1s;
+	// auto nextTime = chrono::high_resolution_clock::now() + 1s;
+	
 	// 일단 임의로 1초로 설정 추후 애니메이션 프레임도 보고 실제 돌아가는거 보고 상태별로 조정필요함
 	// if (state == BossDead::GetInstance()) nextTime += 60s;	// 스폰쿨타임
 	// bool keepAlive = false;
@@ -243,7 +246,7 @@ void Boss::Update() {
 	// 			break;
 	// 		}
 	// if (keepAlive) 
-	AddTimer(id, 4, nextTime, target);	// EV_BOSS
+	// AddTimer(id, 4, nextTime, target);	// EV_BOSS
 	// else isActive = false;
 }
 
@@ -255,6 +258,7 @@ void Boss::BoneMapUpdate(char* new_boneMap) {
 				boneLock.unlock();
 				continue;
 			}
+			cout << "boss is damaged\n";
 			BoneMap[i] -= 1;
 			boneLock.unlock();
 			if (BoneMap[i] <= 0) {
@@ -265,18 +269,83 @@ void Boss::BoneMapUpdate(char* new_boneMap) {
 					send_packet(i, &pack);
 				}
 			}
-			else {
-				SC_BONE_UPDATE pack{ sizeof(SC_BONE_UPDATE), sc_bone_update, id, i };
-				pack.attacked = BoneMap[i];
-				for (int i = 0; i < MAX_PLAYER; ++i) {
-					if (g_player[i] == NULL) continue;
-					send_packet(i, &pack);
-				}
-			}
+			// else {
+			// 	SC_BONE_UPDATE pack{ sizeof(SC_BONE_UPDATE), sc_bone_update, id, i };
+			// 	pack.attacked = BoneMap[i];
+			// 	for (int i = 0; i < MAX_PLAYER; ++i) {
+			// 		if (g_player[i] == NULL) continue;
+			// 		send_packet(i, &pack);
+			// 	}
+			// }
 		}
 		else boneLock.unlock();
 	}
 	
+}
+
+void Boss::BoneBreak(const int& part) {
+	switch (part) {
+	case R_HAND:
+		cout << "Boss's R_HAND is Break\n";
+		healthPoint.right_hand_hp = 0;
+		isDestroy.rightHand = true;
+		break;
+	case R_FOREARM:
+		cout << "Boss's R_FOREARM is Break\n";
+		healthPoint.right_forearm_hp = 0;
+		isDestroy.rightForearm = true;
+		break;
+	case R_UPPERARM:
+		cout << "Boss's R_UPPERARM is Break\n";
+		healthPoint.right_upperarm_hp = 0;
+		isDestroy.rightUpperarm = true;
+		break;
+	case R_FOOR:
+		cout << "Boss's R_FOOT is Break\n";
+		healthPoint.right_foot_hp = 0;
+		isDestroy.rightFoot = true;
+		break;
+	case R_CALF:
+		cout << "Boss's R_CALF is Break\n";
+		healthPoint.right_calf_hp = 0;
+		isDestroy.rightCalf = true;
+		break;
+	case R_THIGHT:
+		cout << "Boss's R_THIGHT is Break\n";
+		healthPoint.right_thigh_hp = 0;
+		isDestroy.rightThigh = true;
+		break;
+	case L_HAND:
+		cout << "Boss's L_HAND is Break\n";
+		healthPoint.left_hand_hp = 0;
+		isDestroy.leftHand = true;
+		break;
+	case L_FOREARM:
+		cout << "Boss's L_FOREARM is Break\n";
+		healthPoint.left_forearm_hp = 0;
+		isDestroy.leftForearm = true;
+		break;
+	case L_UPPERARM:
+		cout << "Boss's L_UPPERARM is Break\n"; 
+		healthPoint.left_upperarm_hp = 0;
+		isDestroy.leftUpperarm = true;
+		break;
+	case L_FOOR:
+		cout << "Boss's L_FOOT is Break\n"; 
+		healthPoint.left_foot_hp = 0;
+		isDestroy.leftFoot = true;
+		break;
+	case L_CALF:
+		cout << "Boss's L_CALF is Break\n"; 
+		healthPoint.left_calf_hp = 0;
+		isDestroy.leftCalf = true;
+		break;
+	case L_THIGHT:
+		cout << "Boss's L_THIGHT is Break\n"; 
+		healthPoint.left_thigh_hp = 0;
+		isDestroy.leftThigh = true;
+		break;
+	}
 }
 
 void Boss::IsPartDestroyed() {  

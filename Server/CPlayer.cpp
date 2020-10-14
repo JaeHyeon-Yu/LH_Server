@@ -572,9 +572,9 @@ void CPlayer::EnterGame() {
 		pack.type = sc_set_host;
 		send_packet(id, &pack);
 	}
-	// Sleep(1000);
-	// pos = { 59060.0, 55640.0, 1970.0 };
-	// send_packet(id, &MakeUpdatePacket());
+	Sleep(1000);
+	pos = { 59060.0, 55640.0, 1970.0 };
+	send_packet(id, &MakeUpdatePacket());
 }
 
 void CPlayer::EnterObj(int oid) {

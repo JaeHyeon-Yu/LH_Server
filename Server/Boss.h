@@ -109,4 +109,7 @@ public:
 
 	int GetTarget() const;
 	int GetID() const;
+
+
+	void BoneBreak(const int& part);
 };
