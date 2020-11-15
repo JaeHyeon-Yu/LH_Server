@@ -63,6 +63,7 @@ public:
 	bool isHide;
 	bool isAssasinate;
 	bool isHost;
+	bool isBattleMode;
 
 	int comboCnt;
 	high_resolution_clock::time_point lastAtkTime;	// ÄÞº¸°ø°Ý
@@ -85,7 +86,7 @@ public:
 	int GetRoomNum();
 	void SetIdx(int n) { id = n; }
 	int GetIdx() { return id; }
-	void SetPosition(const Position& pos);
+	void SetPosition(const Position& pos, bool teleport = false);
 	Position GetPosition() const;
 	int GetDistance(Position pos);
 	void SetRotation(const Position& rotation);
@@ -131,5 +132,8 @@ public:
 	void WeaponOff(const Weapon_Type& wpn);
 
 	bool IsFront(const Position& mon_pos);
+	bool IsTeleport();
+
+	bool IsBattleMode();
 };
 

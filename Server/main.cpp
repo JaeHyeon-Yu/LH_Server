@@ -227,6 +227,10 @@ void ProcessPacket(int uid, char* buf) {
 		g_player[uid]->Attck();
 	}break;
 	case cs_fireball: {
+		// g_player[uid]->MoveTo(Position(59060.0, 55640.0, 1970.0));
+		g_player[uid]->SetPosition(Position(59060.0, 55640.0, 1970.0), true);
+		send_packet(uid, &g_player[uid]->MakeUpdatePacket());
+		break;
 		SC_FIREBALL pack;
 		pack.size = sizeof(SC_FIREBALL);
 		pack.type = sc_fireball;

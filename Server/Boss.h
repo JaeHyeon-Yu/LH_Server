@@ -27,7 +27,8 @@
 #define L_CALF 10
 #define L_THIGHT 11
 
-#define BOSS_ACTIVITY_RANGE 5000
+#define BOSS_ACTIVITY_RANGE 4000
+#define B_LONG_ATK_RANGE 1500
 
 struct HealthPoint {
 	short head_hp;
@@ -112,4 +113,8 @@ public:
 
 
 	void BoneBreak(const int& part);
+
+	bool IsLegBroken() const;
+	bool IsRHandBroken() const;
+	bool IsLHandBroken() const;
 };

@@ -37,7 +37,7 @@ void IdleState::Execute(CMonster* mon) {
 		if (g_player[i] == NULL) continue;
 		if (!g_player[i]->isAlive) continue;
 		int dis = mon->GetDistance(g_player[i]->GetPosition());
-		if (dis < CHASE_RANGE) disArray[i] = dis;
+		if (0 <= dis && dis < CHASE_RANGE) disArray[i] = dis;
 	}
 	
 	int chaseID = 0;

@@ -382,7 +382,7 @@ void CMonster::UpdateTarget() {
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		if (g_player[i] == NULL) continue;
 		if (!g_player[i]->isAlive) continue;
-		if (player_dir[i] < player_dir[target])
+		if (0 <= player_dir[i] && player_dir[i] < player_dir[target])
 			target = i;
 	}
 }
@@ -415,6 +415,7 @@ void CreateMonsters(int num) {
 	g_boss[idx]->Initialize(idx, defPos);
 	cout<<"Boss Golem(id="<<idx<<") Spawn("<<defPos.x<<", " << defPos.y << ", " << defPos.z << ")\n";
 	AddTimer(BOSS_IDX, 4, chrono::high_resolution_clock::now() + 1s, NULL);
+	// return;
 	// return
 	// return;
 	// idx = idx + 1;

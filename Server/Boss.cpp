@@ -163,28 +163,29 @@ B_STATE Boss::Attack() {
 	if (g_player[targetID] != NULL) target = targetID;
 	if (targetDis < 0 || targetDis > BOSS_ACTIVITY_RANGE) return B_ATTACK;
 
-	if (isDestroy.leftFoot || isDestroy.rightFoot) {
-		// ³ë¸Ö¾îÅÃ, ÇÚµåÅ¬·¦, ½ºÀ¬, ÆÝÄ¡, ´Ù¿î¾îÅÃ
-		if (!isDestroy.leftHand && !isDestroy.rightHand) {
-			switch (uid(dre) % 5) {
-			case 0: return B_HANDCLAP_ATK; break;
-			case 1: return B_SWING_ATK; break;
-			case 2: return B_PUNCH_ATK; break;
-			case 3: return B_DOWN_ATK; break;
-			case 4: return B_NORMAL_ATK;  break;
-			}
-		}
-		else if (isDestroy.leftHand) {
-			if (isDestroy.rightHand) return B_NORMAL_ATK;
-			return B_SWING_ATK;
-		}
-		else if (isDestroy.rightHand) {
-			if (isDestroy.leftHand) return B_NORMAL_ATK;
-			switch (uid(dre) % 2){
-			case 0: return B_PUNCH_ATK; break;
-			case 1: return B_NORMAL_ATK; break;
-			}
-		}
+	if (IsLegBroken()) {
+		return B_DOWN_ATK;
+		// if (!isDestroy.leftHand && !isDestroy.rightHand) {
+		// 	// switch (uid(dre) % 5) {
+		// 	// case 0: return B_HANDCLAP_ATK; break;
+		// 	// case 1: return B_SWING_ATK; break;
+		// 	// case 2: return B_PUNCH_ATK; break;
+		// 	// case 3: return B_DOWN_ATK; break;
+		// 	// case 4: return B_NORMAL_ATK;  break;
+		// 	// }
+		// 	return B_DOWN_ATK;
+		// }
+		// else if (isDestroy.leftHand) {
+		// 	if (isDestroy.rightHand) return B_NORMAL_ATK;
+		// 	return B_SWING_ATK;
+		// }
+		// else if (isDestroy.rightHand) {
+		// 	if (isDestroy.leftHand) return B_NORMAL_ATK;
+		// 	switch (uid(dre) % 2){
+		// 	case 0: return B_PUNCH_ATK; break;
+		// 	case 1: return B_NORMAL_ATK; break;
+		// 	}
+		// }
 		/*
 		¿Þ ³ë¸Ö ÆÝÄ¡
 		¿À ½ºÀ®
@@ -193,11 +194,23 @@ B_STATE Boss::Attack() {
 	}
 	else {
 		// Ã¢´øÁö±â, µ¹´øÁö±â, µ¹Áø, ¹â±â
-		switch (uid(dre) % 4) {
-		case 0: return B_THROW_ATK; break;
-		case 1: return B_STOMP_ATK; break;
-		case 2: return B_DASH_ATK; break;
-		case 3: return B_ICESPEAR_ATK; break;
+		if (g_player[target] == NULL) return B_IDLE;
+		targetDis = GetDistance(pos, g_player[target]->GetPosition());
+		if (targetDis > B_LONG_ATK_RANGE) {
+			switch (uid(dre) % 3) {
+			case 0: return B_THROW_ATK; break;
+			case 1: return B_DASH_ATK; break;
+			case 2: return B_ICESPEAR_ATK; break;
+			}
+		}
+		else {
+			switch (uid(dre) % 5) {
+			case 0: return B_STOMP_ATK; break;
+			case 1: return B_HANDCLAP_ATK; break;
+			case 2: return B_SWING_ATK; break;
+			case 3: return B_NORMAL_ATK; break;
+			case 4: return B_PUNCH_ATK; break;
+			}
 		}
 	}
 	return B_ATTACK;
@@ -258,11 +271,13 @@ void Boss::BoneMapUpdate(char* new_boneMap) {
 				boneLock.unlock();
 				continue;
 			}
-			cout << "boss is damaged\n";
+			// cout << "boss is damaged\n";
 			BoneMap[i] -= 1;
+			BoneMap[i] = 0;
 			boneLock.unlock();
 			if (BoneMap[i] <= 0) {
-				cout << "º¸½º ºÎÀ§ ÆÄ±«" << endl;
+				// cout << "º¸½º ºÎÀ§ ÆÄ±«" << endl;
+				BoneBreak(i);
 				SC_BONE_BREAK pack{ sizeof(SC_BONE_BREAK), sc_bone_break, id, i };
 				for (int i = 0; i < MAX_PLAYER; ++i) {
 					if (g_player[i] == NULL) continue;
@@ -354,6 +369,30 @@ void Boss::IsPartDestroyed() {
 	if (healthPoint.left_forearm_hp <= 0) isDestroy.leftForearm = true;
 	if (healthPoint.right_forearm_hp <= 0) isDestroy.rightForearm = true;
 	if (healthPoint.head_hp <= 0) isDestroy.head = true;
+}
+
+bool Boss::IsLegBroken() const{
+	if (isDestroy.rightFoot) return true;
+	if (isDestroy.rightThigh) return true;
+	if (isDestroy.rightCalf) return true;
+	if (isDestroy.leftFoot) return true;
+	if (isDestroy.leftThigh) return true;
+	if (isDestroy.leftCalf) return true;
+	return false;
+}
+
+bool Boss::IsRHandBroken() const {
+	if (isDestroy.rightForearm) return true;
+	if (isDestroy.rightUpperarm) return true;
+	if (isDestroy.rightHand) return true;
+	return false;
+}
+
+bool Boss::IsLHandBroken() const {
+	if (isDestroy.leftForearm) return true;
+	if (isDestroy.leftUpperarm) return true;
+	if (isDestroy.leftHand) return true;
+	return false;
 }
 
 void Boss::ChangeState(BossState* ns){

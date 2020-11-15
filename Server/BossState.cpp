@@ -3,6 +3,10 @@
 #include "CPlayer.h"
 #include "Event.h"
 #include <map>
+#include <random>
+// down 1 -> L hand
+// down 2 -> R hand
+// down sweep -> L hand
 
 extern map<int, CPlayer*> g_player;
 BossIdle* BossIdle::instance;
@@ -22,6 +26,9 @@ BossHandClapAttack* BossHandClapAttack::instance;
 
 extern void send_packet(int uid, void* p);
 extern float GetDegree(Position p1, Position p2);
+
+extern default_random_engine dre;
+extern uniform_int_distribution<> uid;
 
 void ChangeNextState(Boss* b, B_STATE nextState) {
 	switch (nextState) {
@@ -62,7 +69,7 @@ void ChangeNextState(Boss* b, B_STATE nextState) {
 		b->ChangeState(BossPunchAttack::GetInstance());
 		break;
 	case B_DOWN_ATK:
-		b->ChangeState(BossPunchAttack::GetInstance());
+		b->ChangeState(BossDownAttack::GetInstance());
 		break;
 	default:
 		b->ChangeState(BossDead::GetInstance());
@@ -213,7 +220,10 @@ void BossDashAttack::Enter(Boss*) {
 }
 
 void BossDashAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -257,7 +267,10 @@ void BossSwingAttack::Enter(Boss*) {
 }
 
 void BossSwingAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -312,7 +325,10 @@ void BossStrikeAttack::Enter(Boss*) {
 }
 
 void BossStrikeAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -367,7 +383,10 @@ void BossThrowAttack::Enter(Boss*) {
 }
 
 void BossThrowAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -424,7 +443,10 @@ void BossStompAttack::Enter(Boss*) {
 }
 
 void BossStompAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -463,7 +485,10 @@ void BossIceSpearAttack::Enter(Boss*) {
 }
 
 void BossIceSpearAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -502,7 +527,10 @@ void BossHandClapAttack::Enter(Boss*) {
 }
 
 void BossHandClapAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -541,7 +569,10 @@ void BossPunchAttack::Enter(Boss*) {
 }
 
 void BossPunchAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken()) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
@@ -580,8 +611,10 @@ void BossDownAttack::Enter(Boss*) {
 }
 
 void BossDownAttack::Execute(Boss* b) {
-	if (g_player[b->GetTarget()] == NULL) return;
-
+	if (g_player[b->GetTarget()] == NULL || b->IsLegBroken() == false) {
+		b->ChangeState(BossAttack::GetInstance());
+		return;
+	}
 	SC_SET_ROTATION rpack{ sizeof(SC_SET_ROTATION), sc_set_rotation, b->GetID() };
 	auto ydegree = GetDegree(b->GetPosition(), g_player[b->GetTarget()]->GetPosition());
 	rpack.rot = { 0,ydegree,0 };
@@ -589,10 +622,41 @@ void BossDownAttack::Execute(Boss* b) {
 		if (g_player[i] == NULL) continue;
 		send_packet(i, &rpack);
 	}
-
+	
+	int atk_state = 0;
+	if (b->IsLHandBroken()) {
+		if (b->IsRHandBroken()) return;
+		atk_state = B_DOWN_ATK_R;
+	}
+	else if (b->IsRHandBroken()) {
+		if (b->IsLHandBroken()) return;
+		switch (uid(dre) % 2) {
+		case 0:
+			atk_state = B_DOWN_ATK_L;
+			break;
+		case 1:
+			atk_state = B_DOWN_ATK_SWEEP;
+			break;
+		}
+	}
+	else {
+		// ÆÈ ¸ÖÂÄ
+		switch (uid(dre) % 3){
+		case 0:	
+			atk_state = B_DOWN_ATK_L;
+			break;
+		case 1: 
+			atk_state = B_DOWN_ATK_R;
+			break;
+		case 2:
+			atk_state = B_DOWN_ATK_SWEEP;
+			break;
+		}
+	}
+	if (atk_state == 0) return;
 	cout << "Boss use Down-Attack!\n";
 	SC_BOSS_ATTACK pack{ sizeof(SC_BOSS_ATTACK), sc_boss_attack, b->GetID() };
-	pack.atk_state = B_DOWN_ATK;
+	pack.atk_state = atk_state;
 	pack.target = g_player[b->GetTarget()]->GetPosition();
 	for (int i = 0; i < MAX_PLAYER; ++i) {
 		if (g_player[i] == NULL) continue;

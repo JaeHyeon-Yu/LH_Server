@@ -235,11 +235,24 @@ void CPlayer::TakeDamage(int damage) {
 void CPlayer::Evade() {
 	if (isEvade) return;
 	isEvade = true;
-	SC_EVADE pack{ sizeof(SC_EVADE), sc_evade, id };
-	for (int i = 0; i < MAX_PLAYER; ++i) {
-		if (g_player[i] == NULL) continue;
-		if (i == id) continue;
-		// send_packet(i, &pack);
+
+	if (IsBattleMode() == true) {
+		cout << "asd" << endl;
+		SC_EVADE pack{ sizeof(SC_EVADE), sc_evade, id };
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			if (i == id) continue;
+			send_packet(i, &pack);
+		}
+	}
+	else {
+		cout << "zxc" << endl;
+		SC_JUMP pack{ sizeof(SC_EVADE), sc_evade, id };
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			if (i == id) continue;
+			send_packet(i, &pack);
+		}
 	}
 	AddTimer(id, EV_EVADE_OFF, high_resolution_clock::now() + 2s, NULL);
 }
@@ -393,7 +406,7 @@ void CPlayer::MoveTo(const Position& p) {
 	// 	newVl.insert(BOSS_IDX);	// Boss를 얼마나 스폰시킬지 몰라서 일단 단일개체로 설정함
 	/// 일단 보스빼고 송수신해보자
 
-	// send_packet(id, &MakeUpdatePacket());
+	send_packet(id, &MakeUpdatePacket());
 
 	// 시야에 새로 들어온 오브젝트에 대한 처리
 	for (auto& no : newVl) {
@@ -458,8 +471,8 @@ void CPlayer::MoveTo(const Position& p) {
 	// }
 }
 
-void CPlayer::SetPosition(const Position& pos) {
-	// if (GetDistance(pos) < 10 )
+void CPlayer::SetPosition(const Position& pos, bool teleport) {
+	if (!IsTeleport()&&GetDistance(pos) < 100) return;
 	this->pos = pos;
 }
 Position CPlayer::GetPosition() const {
@@ -572,9 +585,9 @@ void CPlayer::EnterGame() {
 		pack.type = sc_set_host;
 		send_packet(id, &pack);
 	}
-	Sleep(1000);
-	pos = { 59060.0, 55640.0, 1970.0 };
-	send_packet(id, &MakeUpdatePacket());
+	// Sleep(1000);
+	// pos = { 59060.0, 55640.0, 1970.0 };
+	// send_packet(id, &MakeUpdatePacket());
 }
 
 void CPlayer::EnterObj(int oid) {
@@ -597,6 +610,13 @@ bool CPlayer::IsFront(const Position& mon_pos) {
 	if (velocity.y < 0)
 		if (mon_pos.y > pos.y) return false;
 	return true;
+}
+
+bool CPlayer::IsTeleport() {
+	// 포탈 근처에 있으면 거리검사 건너뛰기?
+	Position potal3{ 59398.644531, 55202.507812, 2160.0 };
+	if (GetDistance(potal3) < 300) return true;
+	return false;
 }
 
 void CPlayer::SetRotation(const Position& rotation) {
@@ -650,4 +670,17 @@ void CPlayer::SetMoveState(const Movement_State& new_state) {
 		if (g_player[i] == NULL) continue;
 		send_packet(i, &pack);
 	}
+}
+
+bool CPlayer::IsBattleMode(){
+	for (int i = 0; i < MAX_MONSTER; ++i) {
+		int oid = NPC_ID_START + i;
+		if (g_monster[oid] == NULL) continue;
+		int dis = GetDistance(g_monster[oid]->GetPosition());
+		if (0 < dis && dis < 1000) return true;
+	}
+	if (g_boss[BOSS_IDX] == NULL) return false;
+	int dis = GetDistance(g_boss[BOSS_IDX]->GetPosition());
+	if (0 < dis && dis < 1000) return true;
+	return false;
 }
