@@ -446,6 +446,7 @@ void Login(const int& uid, const CS_LOGIN& pack) {
 	string sql = "select * from Account where id  = \'" + (string)pack.id +
 		"\' and password = \'" + (string)pack.password + "\'";
 	AddQuary(uid, 5, pack.id, pack.password);
+	g_player[uid]->SetObjType(static_cast<OBJ_TYPE>(pack.character));
 	return;
 	int status;	// check login status (fail, success)
 	int ret = g_dbc.ExcuteStatementDirect((SQLCHAR*)sql.c_str());

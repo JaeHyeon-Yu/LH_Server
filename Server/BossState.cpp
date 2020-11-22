@@ -204,7 +204,7 @@ void BossDead::Execute(Boss* b) {
 }
 
 void BossDead::Exit(Boss*) {
-	cout << "Boss is Respawn!" << endl;
+	// cout << "Boss is Respawn!" << endl;
 
 }
 

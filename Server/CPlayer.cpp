@@ -134,7 +134,18 @@ void CPlayer::Attck() {
 			//	break;
 		}
 	}
-	
+
+	auto& boss = g_boss[BOSS_IDX];
+	if (boss != NULL) {
+		if (0 < boss->GetMainHP()) {
+			if (GetDistance(boss->GetPosition()) < ATTACK_RANGE) {
+				// cout << "asdasasdasd" << endl;
+				cout << name << id << "의 공격으로 보스에게 20의 대미지!" << endl;
+				boss->TakeDamage(20);
+			}
+		}
+	}
+
 	AddTimer(id, EV_ATK_OFF, high_resolution_clock::now() + 500ms, NULL);	// 공격 종료를 알림
 }
 
@@ -237,7 +248,6 @@ void CPlayer::Evade() {
 	isEvade = true;
 
 	if (IsBattleMode() == true) {
-		cout << "asd" << endl;
 		SC_EVADE pack{ sizeof(SC_EVADE), sc_evade, id };
 		for (int i = 0; i < MAX_PLAYER; ++i) {
 			if (g_player[i] == NULL) continue;
@@ -246,7 +256,6 @@ void CPlayer::Evade() {
 		}
 	}
 	else {
-		cout << "zxc" << endl;
 		SC_JUMP pack{ sizeof(SC_EVADE), sc_evade, id };
 		for (int i = 0; i < MAX_PLAYER; ++i) {
 			if (g_player[i] == NULL) continue;
@@ -491,7 +500,7 @@ SC_OBJECT_ENTER CPlayer::MakeEnterPacket() {
 	SC_OBJECT_ENTER p;
 	p.type = sc_enter_obj;
 	p.size = sizeof(SC_OBJECT_ENTER);
-	p.o_type = OBJ_PLAYER;
+	p.o_type = objType;
 	strcpy_s(p.name, name.c_str());
 	p.pos = pos;
 	p.oid = id;
@@ -654,6 +663,10 @@ int CPlayer::GetLevel() const {
 void CPlayer::SetVelocity(const Position& v) {
 	if (v.IsZero()) return;
 	velocity = v;
+}
+
+void CPlayer::SetObjType(const OBJ_TYPE& obj_type) {
+	objType = obj_type;
 }
 
 void CPlayer::SetMoveState(const Movement_State& new_state) {

@@ -61,6 +61,8 @@ void Boss::Initialize(const int& id, const Position& p) {
 	BoneMap[L_FOOR] = 20;
 	BoneMap[L_CALF] = 22;
 	BoneMap[L_THIGHT] = 24;
+
+	mainHP = 600;
 }
 
 B_STATE Boss::Idle() {
@@ -242,7 +244,12 @@ B_STATE Boss::Attack() {
 void Boss::Update() {
 	if (healthPoint.body_hp <= 0) {
 		ChangeState(BossDead::GetInstance());
-		AddTimer(id, 4, chrono::high_resolution_clock::now()+1s, target);
+		// AddTimer(id, 4, chrono::high_resolution_clock::now()+1s, target);
+		return;
+	}
+	if (mainHP <= 0) {
+		ChangeState(BossDead::GetInstance());
+		// AddTimer(id, 4, chrono::high_resolution_clock::now() + 1s, target);
 		return;
 	}
 	else IsPartDestroyed();
@@ -271,10 +278,12 @@ void Boss::BoneMapUpdate(char* new_boneMap) {
 				boneLock.unlock();
 				continue;
 			}
-			// cout << "boss is damaged\n";
+			cout << "boss is damaged\n";
 			BoneMap[i] -= 1;
-			BoneMap[i] = 0;
+			// TakeDamage(20);
+			// BoneMap[i] = 0;
 			boneLock.unlock();
+
 			if (BoneMap[i] <= 0) {
 				// cout << "보스 부위 파괴" << endl;
 				BoneBreak(i);
@@ -371,6 +380,20 @@ void Boss::IsPartDestroyed() {
 	if (healthPoint.head_hp <= 0) isDestroy.head = true;
 }
 
+void Boss::TakeDamage(const int& damage) {
+	mainHP -= damage;
+	if (mainHP <= 0) {
+		// Death
+		mainHP = 0;
+		SC_DEAD pack{ sizeof(SC_DEAD), sc_dead, id };
+		for (int i = 0; i < MAX_PLAYER; ++i) {
+			if (g_player[i] == NULL) continue;
+			send_packet(i, &pack);
+		}
+	}
+}
+
+
 bool Boss::IsLegBroken() const{
 	if (isDestroy.rightFoot) return true;
 	if (isDestroy.rightThigh) return true;
@@ -427,6 +450,10 @@ int Boss::GetTarget() const {
 
 int Boss::GetID() const {
 	return id;
+}
+
+int Boss::GetMainHP() const {
+	return mainHP;
 }
 
 SC_OBJECT_ENTER Boss::MakeEnterPacket() {

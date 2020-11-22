@@ -30,7 +30,7 @@ enum Lobby_State {
 };
 
 enum OBJ_TYPE {
-	OBJ_PLAYER, OBJ_GOBLIN, OBJ_CYCLOPS, OBJ_BEETLE, OBJ_MINI_GOLEM, OBJ_LAZARD, OBJ_GOLEM, OBJ_TROLL
+	OBJ_PLAYER_A, OBJ_PLAYER_B, OBJ_PLAYER_C, OBJ_PLAYER_D, OBJ_GOBLIN, OBJ_CYCLOPS, OBJ_BEETLE, OBJ_MINI_GOLEM, OBJ_LAZARD, OBJ_GOLEM, OBJ_TROLL
 };
 
 #pragma pack(push, 1)
@@ -39,6 +39,7 @@ struct CS_LOGIN {
 	char type;
 	char id[MAXLEN];
 	char password[MAXLEN];
+	char character;
 };
 struct SC_LOGIN {
 	char size;

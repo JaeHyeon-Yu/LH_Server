@@ -83,6 +83,7 @@ private:
 	int id;
 	short BoneMap[NUM_PARTS];	// 남은 피격횟수
 	mutex boneLock;
+	int mainHP;
 
 public:
 	Boss() = default;
@@ -101,6 +102,7 @@ public:
 	IsDestroy GetIsDestroy() const;
 	Position GetPosition() const;
 	int GetTotalHP() const;
+	int GetMainHP() const;
 
 	void SetPosition(const Position& p);
 	void SetRotation(const Position& p);
@@ -113,6 +115,7 @@ public:
 
 
 	void BoneBreak(const int& part);
+	void TakeDamage(const int& damage);
 
 	bool IsLegBroken() const;
 	bool IsRHandBroken() const;

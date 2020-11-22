@@ -51,6 +51,7 @@ private:
 
 	Weapon_Type wpnType;
 	Movement_State moveState;
+	// OBJ_TYPE objType;
 public:
 	CObject fireball;
 	unordered_set<int> viewList;
@@ -64,6 +65,7 @@ public:
 	bool isAssasinate;
 	bool isHost;
 	bool isBattleMode;
+
 
 	int comboCnt;
 	high_resolution_clock::time_point lastAtkTime;	// ÄÞº¸°ø°Ý
@@ -101,6 +103,8 @@ public:
 	int GetLevel() const;
 
 	void SetMoveState(const Movement_State& new_state);
+
+	void SetObjType(const OBJ_TYPE& obj_type);
 
 	// Packet
 	SC_OBJECT_ENTER MakeEnterPacket();
